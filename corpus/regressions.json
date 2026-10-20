@@ -1,0 +1,95 @@
+[
+  {
+    "file": "corpus/mt940/no_activity.mt940",
+    "expected": "corpus/mt940/no_activity.expected.json",
+    "implementations": [
+      "wolph",
+      "bankstatementparser"
+    ]
+  },
+  {
+    "file": "corpus/mt940/currency_conflict.mt940",
+    "expected": "corpus/mt940/currency_conflict.expected.json",
+    "implementations": [
+      "wolph"
+    ]
+  },
+  {
+    "file": "corpus/mt940/multiple_accounts.mt940",
+    "expected": "corpus/mt940/multiple_accounts.expected.json",
+    "implementations": [
+      "wolph",
+      "bankstatementparser"
+    ]
+  },
+  {
+    "file": "corpus/csv/all_fields.csv",
+    "expected": "corpus/csv/all_fields.expected.json",
+    "implementations": [
+      "native",
+      "bankstatementparser"
+    ]
+  },
+  {
+    "file": "corpus/csv/ambiguous_amount.csv",
+    "expected": "corpus/csv/ambiguous_amount.expected.json",
+    "implementations": [
+      "native",
+      "bankstatementparser"
+    ]
+  },
+  {
+    "file": "corpus/csv/negative_debit.csv",
+    "expected": "corpus/csv/negative_debit.expected.json",
+    "implementations": [
+      "native",
+      "bankstatementparser"
+    ]
+  },
+  {
+    "file": "corpus/csv/duplicate_header.csv",
+    "expected": "corpus/csv/duplicate_header.expected.json",
+    "implementations": [
+      "native",
+      "bankstatementparser"
+    ]
+  },
+  {
+    "file": "corpus/csv/malformed_row.csv",
+    "expected": "corpus/csv/malformed_row.expected.json",
+    "implementations": [
+      "native",
+      "bankstatementparser"
+    ]
+  },
+  {
+    "file": "corpus/camt053/multiple_statements.camt053.xml",
+    "expected": "corpus/camt053/multiple_statements.expected.json",
+    "implementations": [
+      "bankstatementparser"
+    ]
+  },
+  {
+    "file": "corpus/ofx/windows1252.ofx",
+    "expected": "corpus/ofx/windows1252.expected.json",
+    "implementations": [
+      "ofxparse",
+      "bankstatementparser"
+    ]
+  },
+  {
+    "file": "corpus/ofx/multiple_statements.ofx",
+    "expected": "corpus/ofx/multiple_statements.expected.json",
+    "implementations": [
+      "ofxparse",
+      "bankstatementparser"
+    ]
+  },
+  {
+    "file": "corpus/camt053/all_fields.camt053.xml",
+    "expected": "corpus/camt053/all_fields.expected.json",
+    "implementations": [
+      "bankstatementparser"
+    ]
+  }
+]

@@ -1,0 +1,625 @@
+{
+  "generated_at_utc": "2026-10-09T22:46:57.664854+00:00",
+  "project_version": "0.5.0",
+  "environment": {
+    "implementation_name": "cpython",
+    "implementation_version": "3.14.7",
+    "os_name": "posix",
+    "platform_machine": "arm64",
+    "platform_release": "25.5.0",
+    "platform_system": "Darwin",
+    "platform_version": "Darwin Kernel Version 25.5.0: Mon Apr 27 20:41:12 PDT 2026; root:xnu-12377.121.6~2/RELEASE_ARM64_T6050",
+    "python_full_version": "3.14.7",
+    "platform_python_implementation": "CPython",
+    "python_version": "3.14",
+    "sys_platform": "darwin"
+  },
+  "profiles": {
+    "base": {
+      "mt-940": "5.1.1"
+    },
+    "ofx": {
+      "beautifulsoup4": "4.15.0",
+      "defusedxml": "0.7.1",
+      "lxml": "6.1.3",
+      "mt-940": "5.1.1",
+      "ofxparse": "0.21",
+      "six": "1.17.0",
+      "soupsieve": "2.10",
+      "typing-extensions": "4.16.0"
+    },
+    "camt": {
+      "annotated-types": "0.8.0",
+      "bankstatementparser": "0.0.20",
+      "defusedxml": "0.7.1",
+      "lxml": "6.1.3",
+      "mt-940": "5.1.1",
+      "numpy": "2.5.3",
+      "pandas": "2.3.3",
+      "pydantic": "2.14.0",
+      "pydantic-core": "2.50.0",
+      "python-dateutil": "2.9.0.post0",
+      "pytz": "2026.5",
+      "six": "1.17.0",
+      "typing-extensions": "4.16.0",
+      "typing-inspection": "0.4.4",
+      "tzdata": "2026.5"
+    },
+    "alternative": {
+      "annotated-types": "0.8.0",
+      "bankstatementparser": "0.0.20",
+      "defusedxml": "0.7.1",
+      "lxml": "6.1.3",
+      "mt-940": "5.1.1",
+      "numpy": "2.5.3",
+      "pandas": "2.3.3",
+      "pydantic": "2.14.0",
+      "pydantic-core": "2.50.0",
+      "python-dateutil": "2.9.0.post0",
+      "pytz": "2026.5",
+      "six": "1.17.0",
+      "typing-extensions": "4.16.0",
+      "typing-inspection": "0.4.4",
+      "tzdata": "2026.5"
+    },
+    "all": {
+      "annotated-types": "0.8.0",
+      "bankstatementparser": "0.0.20",
+      "beautifulsoup4": "4.15.0",
+      "defusedxml": "0.7.1",
+      "lxml": "6.1.3",
+      "mt-940": "5.1.1",
+      "numpy": "2.5.3",
+      "ofxparse": "0.21",
+      "pandas": "2.3.3",
+      "pydantic": "2.14.0",
+      "pydantic-core": "2.50.0",
+      "python-dateutil": "2.9.0.post0",
+      "pytz": "2026.5",
+      "six": "1.17.0",
+      "soupsieve": "2.10",
+      "typing-extensions": "4.16.0",
+      "typing-inspection": "0.4.4",
+      "tzdata": "2026.5"
+    }
+  },
+  "packages": [
+    {
+      "name": "annotated-types",
+      "version": "0.8.0",
+      "requires": [],
+      "license_expression": "MIT",
+      "license_metadata": [],
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "license_files": [
+        {
+          "path": "annotated_types-0.8.0.dist-info/licenses/LICENSE",
+          "sha256": "fe1049884b1a0d9342901e88e07f32925d24b3121d9972b6a6805fb9824b095d"
+        }
+      ]
+    },
+    {
+      "name": "bankstatementparser",
+      "version": "0.0.20",
+      "requires": [
+        "defusedxml (>=0.7.1,<0.8.0)",
+        "fastapi (>=0.115.0) ; extra == \"api\"",
+        "litellm (>=1.83.10) ; (python_version < \"3.14\") and (extra == \"hybrid\" or extra == \"hybrid-plus\" or extra == \"hybrid-vision\" or extra == \"enrichment\")",
+        "lxml (>=5.0)",
+        "openpyxl (>=3.1.5,<4.0.0) ; extra == \"excel\"",
+        "pandas (>=2.3.3,<3.0.0)",
+        "pdfplumber (>=0.11.0) ; extra == \"hybrid-plus\"",
+        "polars (>=1.32.0,<2.0.0) ; extra == \"polars\"",
+        "pyarrow (>=14.0.0) ; extra == \"parquet\"",
+        "pydantic (>=2.11.0,<3.0.0)",
+        "pypdf (>=4.0.0) ; extra == \"hybrid\" or extra == \"hybrid-plus\" or extra == \"hybrid-vision\"",
+        "pypdfium2 (>=4.30.0) ; extra == \"hybrid-vision\"",
+        "python-multipart (>=0.0.32) ; extra == \"api\"",
+        "uvicorn (>=0.34.0) ; extra == \"api\""
+      ],
+      "license_expression": null,
+      "license_metadata": [
+        "Apache-2.0 OR MIT"
+      ],
+      "license_classifiers": [
+        "License :: Other/Proprietary License"
+      ],
+      "license_files": [
+        {
+          "path": "bankstatementparser-0.0.20.dist-info/licenses/LICENSE",
+          "sha256": "60c6013dd73eb1abcf63d5e4812dea7dee3a199856b083b08fe82c888a14979f"
+        },
+        {
+          "path": "bankstatementparser-0.0.20.dist-info/licenses/LICENSE-APACHE",
+          "sha256": "96bd8666cb191d86e4108d674120391148d050afaaed373dbcca29d41af310e4"
+        },
+        {
+          "path": "bankstatementparser-0.0.20.dist-info/licenses/LICENSE-MIT",
+          "sha256": "0bbbd45c3890a3dbdc4614f1dac05de29053165039aedf71ffc7adb85e2ad810"
+        }
+      ]
+    },
+    {
+      "name": "beautifulsoup4",
+      "version": "4.15.0",
+      "requires": [
+        "soupsieve>=1.6.1",
+        "typing-extensions>=4.0.0",
+        "cchardet; extra == 'cchardet'",
+        "chardet; extra == 'chardet'",
+        "charset-normalizer; extra == 'charset-normalizer'",
+        "html5lib; extra == 'html5lib'",
+        "lxml; extra == 'lxml'"
+      ],
+      "license_expression": null,
+      "license_metadata": [
+        "MIT License"
+      ],
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "license_files": [
+        {
+          "path": "beautifulsoup4-4.15.0.dist-info/licenses/AUTHORS",
+          "sha256": "b989238918e1fdac1e46717cb405b63e92497a272413af0d989c1df6c8abcb6f"
+        },
+        {
+          "path": "beautifulsoup4-4.15.0.dist-info/licenses/LICENSE",
+          "sha256": "55b4d8d4b1e5bc86d10efac91b74c87bcb77526b0f5b9edaf8b9cd2adc7397b2"
+        }
+      ]
+    },
+    {
+      "name": "defusedxml",
+      "version": "0.7.1",
+      "requires": [],
+      "license_expression": null,
+      "license_metadata": [
+        "PSFL"
+      ],
+      "license_classifiers": [
+        "License :: OSI Approved :: Python Software Foundation License"
+      ],
+      "license_files": [
+        {
+          "path": "defusedxml-0.7.1.dist-info/LICENSE",
+          "sha256": "b80ce9da8c42a1f91079627fbbe2bf27210ae108a0ffe5f077d5b08e076c24c8"
+        }
+      ]
+    },
+    {
+      "name": "lxml",
+      "version": "6.1.3",
+      "requires": [
+        "cssselect>=0.7; extra == \"cssselect\"",
+        "html5lib; extra == \"html5\"",
+        "BeautifulSoup4; extra == \"htmlsoup\"",
+        "lxml_html_clean; extra == \"html-clean\""
+      ],
+      "license_expression": null,
+      "license_metadata": [
+        "BSD-3-Clause"
+      ],
+      "license_classifiers": [],
+      "license_files": [
+        {
+          "path": "lxml-6.1.3.dist-info/licenses/LICENSE.txt",
+          "sha256": "8fc2b568133516e46845d2147917adeee1648e70ae9ab5ed6c5417afef4ce855"
+        },
+        {
+          "path": "lxml-6.1.3.dist-info/licenses/LICENSES.txt",
+          "sha256": "388fa99f3bde4447cd5a4cbb114037be026854db6cfe89e112691c1d8abdcf3c"
+        }
+      ]
+    },
+    {
+      "name": "mt-940",
+      "version": "5.1.1",
+      "requires": [
+        "sphinx>=8.0 ; extra == 'docs'",
+        "furo>=2024.8 ; extra == 'docs'",
+        "pytest>=8.0 ; extra == 'tests'",
+        "pytest-cov>=5.0 ; extra == 'tests'",
+        "pytest-randomly>=3.15 ; extra == 'tests'",
+        "coverage>=7.0 ; extra == 'tests'",
+        "pyyaml ; extra == 'tests'",
+        "types-pyyaml ; extra == 'tests'",
+        "tox>=4.0 ; extra == 'tox'",
+        "tox-uv>=1.0 ; extra == 'tox'",
+        "tox-gh-actions>=3.0 ; extra == 'tox'"
+      ],
+      "license_expression": "BSD-3-Clause",
+      "license_metadata": [],
+      "license_classifiers": [],
+      "license_files": [
+        {
+          "path": "mt_940-5.1.1.dist-info/licenses/LICENSE",
+          "sha256": "a6a217119763c6c5ddda1a0211511aa932363e9a1e9d730a07c8782f9d0a6883"
+        }
+      ]
+    },
+    {
+      "name": "numpy",
+      "version": "2.5.3",
+      "requires": [],
+      "license_expression": "BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0",
+      "license_metadata": [],
+      "license_classifiers": [],
+      "license_files": [
+        {
+          "path": "numpy-2.5.3.dist-info/licenses/LICENSE.txt",
+          "sha256": "649a589ab31076e79e9ce62ba24eae9959598124176640dbc95f87bd10f34fcf"
+        },
+        {
+          "path": "numpy-2.5.3.dist-info/licenses/numpy/_core/include/numpy/libdivide/LICENSE.txt",
+          "sha256": "fbc539f47d0cf83bc61378080fb873d5c14630126cacbfe754035c3926daa5ec"
+        },
+        {
+          "path": "numpy-2.5.3.dist-info/licenses/numpy/_core/src/common/pythoncapi-compat/COPYING",
+          "sha256": "3f2c1ffa76383a55ae0aac01c9737cd70050dff63e1f026694fbe9d662573c98"
+        },
+        {
+          "path": "numpy-2.5.3.dist-info/licenses/numpy/_core/src/highway/LICENSE",
+          "sha256": "e340270d4f64384569a91d546acb5b094d69ce47f0c015db77abb74dc6f815af"
+        },
+        {
+          "path": "numpy-2.5.3.dist-info/licenses/numpy/_core/src/multiarray/dragon4_LICENSE.txt",
+          "sha256": "f7b14309e5f54e5022b26448eefd419988ada2aec01d3c1162d84a0ea8f21f2c"
+        },
+        {
+          "path": "numpy-2.5.3.dist-info/licenses/numpy/_core/src/npysort/x86-simd-sort/LICENSE.md",
+          "sha256": "211e7d737d6179a08f791ebb0a99897ce7cd2457410c542876d125576edfe910"
+        },
+        {
+          "path": "numpy-2.5.3.dist-info/licenses/numpy/_core/src/umath/svml/LICENSE",
+          "sha256": "c17011467b4fe6e20fbfbeda4df09e58c2bca5480a063e55735a4000a379aad9"
+        },
+        {
+          "path": "numpy-2.5.3.dist-info/licenses/numpy/fft/pocketfft/LICENSE.md",
+          "sha256": "a85ca13fdf90160b64a0698215868c13b74d835ad0a4e2ba44713b8c5058a056"
+        },
+        {
+          "path": "numpy-2.5.3.dist-info/licenses/numpy/linalg/lapack_lite/LICENSE.txt",
+          "sha256": "a14cc25e10d40a3aa705b7de2fb764a6535d8ee9b2db4e1724900585457dfd55"
+        },
+        {
+          "path": "numpy-2.5.3.dist-info/licenses/numpy/ma/LICENSE",
+          "sha256": "05f3b88351988ecfad10abe92c0c50e5875c6452d5009a0084cc291551ffcca6"
+        },
+        {
+          "path": "numpy-2.5.3.dist-info/licenses/numpy/random/LICENSE.md",
+          "sha256": "103166b62b80443afb9eb3488e052ea06be0cff566b908f199e561fde49af19f"
+        },
+        {
+          "path": "numpy-2.5.3.dist-info/licenses/numpy/random/src/distributions/LICENSE.md",
+          "sha256": "469778be8f33d54e1bcaab28c281cc472916d2d273f835e55bc487d30503face"
+        },
+        {
+          "path": "numpy-2.5.3.dist-info/licenses/numpy/random/src/mt19937/LICENSE.md",
+          "sha256": "0e111337b25494a773106695f0e799f642b8567aaacca4f116a74a8177179156"
+        },
+        {
+          "path": "numpy-2.5.3.dist-info/licenses/numpy/random/src/pcg64/LICENSE.md",
+          "sha256": "e7d4f4fb20358f314210a892ae17351e04993813646f697ec387385ca2a36918"
+        },
+        {
+          "path": "numpy-2.5.3.dist-info/licenses/numpy/random/src/philox/LICENSE.md",
+          "sha256": "6f5828a57223d4cc7f8ea505a2623e7b978b242752c1515e355f46ba2cec1800"
+        },
+        {
+          "path": "numpy-2.5.3.dist-info/licenses/numpy/random/src/sfc64/LICENSE.md",
+          "sha256": "9d4098846018319cd68e228ee6220361787f73bccbf00237a85e4fc9621b998f"
+        },
+        {
+          "path": "numpy-2.5.3.dist-info/licenses/numpy/random/src/splitmix64/LICENSE.md",
+          "sha256": "268b0ca06759d31ea3ca68dd35f20e877916e927b1c2a835e4592a3c4354b1f9"
+        },
+        {
+          "path": "numpy/_core/include/numpy/random/LICENSE.txt",
+          "sha256": "fbc539f47d0cf83bc61378080fb873d5c14630126cacbfe754035c3926daa5ec"
+        },
+        {
+          "path": "numpy/ma/LICENSE",
+          "sha256": "05f3b88351988ecfad10abe92c0c50e5875c6452d5009a0084cc291551ffcca6"
+        },
+        {
+          "path": "numpy/random/LICENSE.md",
+          "sha256": "103166b62b80443afb9eb3488e052ea06be0cff566b908f199e561fde49af19f"
+        }
+      ]
+    },
+    {
+      "name": "ofxparse",
+      "version": "0.21",
+      "requires": [
+        "beautifulsoup4",
+        "lxml",
+        "six"
+      ],
+      "license_expression": null,
+      "license_metadata": [
+        "MIT License"
+      ],
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "license_files": [
+        {
+          "path": "ofxparse-0.21.dist-info/licenses/AUTHORS",
+          "sha256": "74c542576afb28403a4eebda8bbf2d6391ce63728ae8687d7bceb59376fd85d1"
+        },
+        {
+          "path": "ofxparse-0.21.dist-info/licenses/LICENSE",
+          "sha256": "25e75507d0e1d9d2487c12fc839780f2905b18553a60ab1895ac9d999db30370"
+        }
+      ]
+    },
+    {
+      "name": "pandas",
+      "version": "2.3.3",
+      "requires": [
+        "numpy>=1.22.4; python_version < \"3.11\"",
+        "numpy>=1.23.2; python_version == \"3.11\"",
+        "numpy>=1.26.0; python_version >= \"3.12\"",
+        "python-dateutil>=2.8.2",
+        "pytz>=2020.1",
+        "tzdata>=2022.7",
+        "hypothesis>=6.46.1; extra == \"test\"",
+        "pytest>=7.3.2; extra == \"test\"",
+        "pytest-xdist>=2.2.0; extra == \"test\"",
+        "pyarrow>=10.0.1; extra == \"pyarrow\"",
+        "bottleneck>=1.3.6; extra == \"performance\"",
+        "numba>=0.56.4; extra == \"performance\"",
+        "numexpr>=2.8.4; extra == \"performance\"",
+        "scipy>=1.10.0; extra == \"computation\"",
+        "xarray>=2022.12.0; extra == \"computation\"",
+        "fsspec>=2022.11.0; extra == \"fss\"",
+        "s3fs>=2022.11.0; extra == \"aws\"",
+        "gcsfs>=2022.11.0; extra == \"gcp\"",
+        "pandas-gbq>=0.19.0; extra == \"gcp\"",
+        "odfpy>=1.4.1; extra == \"excel\"",
+        "openpyxl>=3.1.0; extra == \"excel\"",
+        "python-calamine>=0.1.7; extra == \"excel\"",
+        "pyxlsb>=1.0.10; extra == \"excel\"",
+        "xlrd>=2.0.1; extra == \"excel\"",
+        "xlsxwriter>=3.0.5; extra == \"excel\"",
+        "pyarrow>=10.0.1; extra == \"parquet\"",
+        "pyarrow>=10.0.1; extra == \"feather\"",
+        "tables>=3.8.0; extra == \"hdf5\"",
+        "pyreadstat>=1.2.0; extra == \"spss\"",
+        "SQLAlchemy>=2.0.0; extra == \"postgresql\"",
+        "psycopg2>=2.9.6; extra == \"postgresql\"",
+        "adbc-driver-postgresql>=0.8.0; extra == \"postgresql\"",
+        "SQLAlchemy>=2.0.0; extra == \"mysql\"",
+        "pymysql>=1.0.2; extra == \"mysql\"",
+        "SQLAlchemy>=2.0.0; extra == \"sql-other\"",
+        "adbc-driver-postgresql>=0.8.0; extra == \"sql-other\"",
+        "adbc-driver-sqlite>=0.8.0; extra == \"sql-other\"",
+        "beautifulsoup4>=4.11.2; extra == \"html\"",
+        "html5lib>=1.1; extra == \"html\"",
+        "lxml>=4.9.2; extra == \"html\"",
+        "lxml>=4.9.2; extra == \"xml\"",
+        "matplotlib>=3.6.3; extra == \"plot\"",
+        "jinja2>=3.1.2; extra == \"output-formatting\"",
+        "tabulate>=0.9.0; extra == \"output-formatting\"",
+        "PyQt5>=5.15.9; extra == \"clipboard\"",
+        "qtpy>=2.3.0; extra == \"clipboard\"",
+        "zstandard>=0.19.0; extra == \"compression\"",
+        "dataframe-api-compat>=0.1.7; extra == \"consortium-standard\"",
+        "adbc-driver-postgresql>=0.8.0; extra == \"all\"",
+        "adbc-driver-sqlite>=0.8.0; extra == \"all\"",
+        "beautifulsoup4>=4.11.2; extra == \"all\"",
+        "bottleneck>=1.3.6; extra == \"all\"",
+        "dataframe-api-compat>=0.1.7; extra == \"all\"",
+        "fastparquet>=2022.12.0; extra == \"all\"",
+        "fsspec>=2022.11.0; extra == \"all\"",
+        "gcsfs>=2022.11.0; extra == \"all\"",
+        "html5lib>=1.1; extra == \"all\"",
+        "hypothesis>=6.46.1; extra == \"all\"",
+        "jinja2>=3.1.2; extra == \"all\"",
+        "lxml>=4.9.2; extra == \"all\"",
+        "matplotlib>=3.6.3; extra == \"all\"",
+        "numba>=0.56.4; extra == \"all\"",
+        "numexpr>=2.8.4; extra == \"all\"",
+        "odfpy>=1.4.1; extra == \"all\"",
+        "openpyxl>=3.1.0; extra == \"all\"",
+        "pandas-gbq>=0.19.0; extra == \"all\"",
+        "psycopg2>=2.9.6; extra == \"all\"",
+        "pyarrow>=10.0.1; extra == \"all\"",
+        "pymysql>=1.0.2; extra == \"all\"",
+        "PyQt5>=5.15.9; extra == \"all\"",
+        "pyreadstat>=1.2.0; extra == \"all\"",
+        "pytest>=7.3.2; extra == \"all\"",
+        "pytest-xdist>=2.2.0; extra == \"all\"",
+        "python-calamine>=0.1.7; extra == \"all\"",
+        "pyxlsb>=1.0.10; extra == \"all\"",
+        "qtpy>=2.3.0; extra == \"all\"",
+        "scipy>=1.10.0; extra == \"all\"",
+        "s3fs>=2022.11.0; extra == \"all\"",
+        "SQLAlchemy>=2.0.0; extra == \"all\"",
+        "tables>=3.8.0; extra == \"all\"",
+        "tabulate>=0.9.0; extra == \"all\"",
+        "xarray>=2022.12.0; extra == \"all\"",
+        "xlrd>=2.0.1; extra == \"all\"",
+        "xlsxwriter>=3.0.5; extra == \"all\"",
+        "zstandard>=0.19.0; extra == \"all\""
+      ],
+      "license_expression": null,
+      "license_metadata": [
+        "BSD 3-Clause License"
+      ],
+      "license_classifiers": [
+        "License :: OSI Approved :: BSD License"
+      ],
+      "license_files": [
+        {
+          "path": "pandas-2.3.3.dist-info/LICENSE",
+          "sha256": "1dea2e80ed1cbd0233f84cee4486b29689f133babaccf4d295e51c43051f3216"
+        }
+      ]
+    },
+    {
+      "name": "pydantic",
+      "version": "2.14.0",
+      "requires": [
+        "annotated-types>=0.6.0",
+        "pydantic-core==2.50.0",
+        "typing-extensions>=4.16.0",
+        "typing-inspection>=0.4.4",
+        "email-validator>=2.0.0; extra == 'email'",
+        "tzdata; (platform_system == 'Windows') and extra == 'timezone'"
+      ],
+      "license_expression": "MIT",
+      "license_metadata": [],
+      "license_classifiers": [],
+      "license_files": [
+        {
+          "path": "pydantic-2.14.0.dist-info/licenses/LICENSE",
+          "sha256": "a9e186f3ca16b5eef84318e7a701721351a00cb7b8ae3a4394b67b49e3529ef3"
+        }
+      ]
+    },
+    {
+      "name": "pydantic_core",
+      "version": "2.50.0",
+      "requires": [
+        "typing-extensions>=4.16.0"
+      ],
+      "license_expression": "MIT",
+      "license_metadata": [],
+      "license_classifiers": [],
+      "license_files": [
+        {
+          "path": "pydantic_core-2.50.0.dist-info/licenses/LICENSE",
+          "sha256": "2afdd30d54b4d62b6f488a6bcc1546e84ec5061f13f4209c03d012348783795a"
+        }
+      ]
+    },
+    {
+      "name": "python-dateutil",
+      "version": "2.9.0.post0",
+      "requires": [
+        "six >=1.5"
+      ],
+      "license_expression": null,
+      "license_metadata": [
+        "Dual License"
+      ],
+      "license_classifiers": [
+        "License :: OSI Approved :: BSD License",
+        "License :: OSI Approved :: Apache Software License"
+      ],
+      "license_files": [
+        {
+          "path": "python_dateutil-2.9.0.post0.dist-info/LICENSE",
+          "sha256": "ba00f51a0d92823b5a1cde27d8b5b9d2321e67ed8da9bc163eff96d5e17e577e"
+        }
+      ]
+    },
+    {
+      "name": "pytz",
+      "version": "2026.5",
+      "requires": [],
+      "license_expression": null,
+      "license_metadata": [
+        "MIT"
+      ],
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "license_files": [
+        {
+          "path": "pytz-2026.5.dist-info/LICENSE.txt",
+          "sha256": "be8b1a37ebe26c592a90f6c0eb33103a7f383ce2f4d7498c0af9a526990a07b8"
+        }
+      ]
+    },
+    {
+      "name": "six",
+      "version": "1.17.0",
+      "requires": [],
+      "license_expression": null,
+      "license_metadata": [
+        "MIT"
+      ],
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "license_files": [
+        {
+          "path": "six-1.17.0.dist-info/LICENSE",
+          "sha256": "4375ba20e2b9c6c4e7cad2940a628fd90e95cc3d50ee92aae755715d8ba1fbd0"
+        }
+      ]
+    },
+    {
+      "name": "soupsieve",
+      "version": "2.10",
+      "requires": [],
+      "license_expression": "MIT",
+      "license_metadata": [],
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "license_files": [
+        {
+          "path": "soupsieve-2.10.dist-info/licenses/LICENSE.md",
+          "sha256": "76a0acdb98c3a63681e20b6f096699ef8cad5fb35d56eef8387e0fa71d797a9a"
+        }
+      ]
+    },
+    {
+      "name": "typing_extensions",
+      "version": "4.16.0",
+      "requires": [],
+      "license_expression": "PSF-2.0",
+      "license_metadata": [],
+      "license_classifiers": [],
+      "license_files": [
+        {
+          "path": "typing_extensions-4.16.0.dist-info/licenses/LICENSE",
+          "sha256": "3b2f81fe21d181c499c59a256c8e1968455d6689d269aa85373bfb6af41da3bf"
+        }
+      ]
+    },
+    {
+      "name": "typing-inspection",
+      "version": "0.4.4",
+      "requires": [
+        "typing-extensions>=4.15.0"
+      ],
+      "license_expression": "MIT",
+      "license_metadata": [],
+      "license_classifiers": [],
+      "license_files": [
+        {
+          "path": "typing_inspection-0.4.4.dist-info/licenses/LICENSE",
+          "sha256": "804b59b25f2c31bd278f9202a19ae49a3945aa2664387e2d0a128c7cacc61ec3"
+        }
+      ]
+    },
+    {
+      "name": "tzdata",
+      "version": "2026.5",
+      "requires": [],
+      "license_expression": null,
+      "license_metadata": [
+        "Apache-2.0"
+      ],
+      "license_classifiers": [],
+      "license_files": [
+        {
+          "path": "tzdata-2026.5.dist-info/licenses/LICENSE",
+          "sha256": "df58f69ea88683035d720b5375bcef0cf5aeaa98a1d098d572e0992c378deb46"
+        },
+        {
+          "path": "tzdata-2026.5.dist-info/licenses/licenses/LICENSE_APACHE",
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+        }
+      ]
+    }
+  ],
+  "scope": "Installed runtime package metadata and license-file hashes; native/component terms require manual review"
+}

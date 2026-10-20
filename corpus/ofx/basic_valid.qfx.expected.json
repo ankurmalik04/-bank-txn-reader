@@ -1,0 +1,69 @@
+{
+  "account": {
+    "id": "SYNTH-QFX-CARD-1",
+    "iban": null,
+    "currency": "USD"
+  },
+  "statement": {
+    "id": null,
+    "sequence": null,
+    "start_date": "2026-09-14",
+    "end_date": "2026-09-15",
+    "opening_balance": null,
+    "closing_balance": "-7.00",
+    "opening_balance_currency": null,
+    "closing_balance_currency": "USD"
+  },
+  "transactions": [
+    {
+      "booking_date": "2026-09-15",
+      "value_date": null,
+      "amount": "-7.00",
+      "currency": "USD",
+      "description": "Test card purchase",
+      "reference": null,
+      "transaction_id": "SYNTH-QFX-1",
+      "counterparty": {
+        "name": null,
+        "account_id": null,
+        "iban": null
+      }
+    }
+  ],
+  "validation_status": "warning",
+  "warning_codes": [
+    "MISSING_OPENING_BALANCE"
+  ],
+  "validation_checks": [
+    {
+      "code": "BALANCE_RECONCILIATION",
+      "status": "skipped",
+      "expected": null,
+      "actual": null
+    },
+    {
+      "code": "CURRENCY_CONSISTENCY",
+      "status": "passed",
+      "expected": null,
+      "actual": null
+    },
+    {
+      "code": "FINITE_AMOUNTS",
+      "status": "passed",
+      "expected": null,
+      "actual": null
+    },
+    {
+      "code": "STATEMENT_DATE_ORDER",
+      "status": "passed",
+      "expected": "start_date <= 2026-09-15",
+      "actual": "2026-09-14"
+    },
+    {
+      "code": "ACCOUNT_IDENTITY",
+      "status": "passed",
+      "expected": null,
+      "actual": null
+    }
+  ]
+}

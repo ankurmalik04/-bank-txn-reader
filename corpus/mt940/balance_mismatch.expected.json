@@ -1,0 +1,81 @@
+{
+  "account": {
+    "id": "GB75TEST00000000000001",
+    "iban": null,
+    "currency": "GBP"
+  },
+  "statement": {
+    "id": "2",
+    "sequence": "1",
+    "start_date": "2026-09-14",
+    "end_date": "2026-09-16",
+    "opening_balance": "500.00",
+    "closing_balance": "560.00",
+    "opening_balance_currency": "GBP",
+    "closing_balance_currency": "GBP"
+  },
+  "transactions": [
+    {
+      "booking_date": "2026-09-15",
+      "value_date": "2026-09-15",
+      "amount": "-18.75",
+      "currency": "GBP",
+      "description": "Test materials",
+      "reference": "MATERIAL",
+      "transaction_id": null,
+      "counterparty": {
+        "name": null,
+        "account_id": null,
+        "iban": null
+      }
+    },
+    {
+      "booking_date": "2026-09-16",
+      "value_date": "2026-09-16",
+      "amount": "80.00",
+      "currency": "GBP",
+      "description": "Test contribution",
+      "reference": "DONATION",
+      "transaction_id": null,
+      "counterparty": {
+        "name": null,
+        "account_id": null,
+        "iban": null
+      }
+    }
+  ],
+  "validation_status": "failed",
+  "warning_codes": [],
+  "validation_checks": [
+    {
+      "code": "BALANCE_RECONCILIATION",
+      "status": "failed",
+      "expected": "560.00",
+      "actual": "561.25"
+    },
+    {
+      "code": "CURRENCY_CONSISTENCY",
+      "status": "passed",
+      "expected": null,
+      "actual": null
+    },
+    {
+      "code": "FINITE_AMOUNTS",
+      "status": "passed",
+      "expected": null,
+      "actual": null
+    },
+    {
+      "code": "STATEMENT_DATE_ORDER",
+      "status": "passed",
+      "expected": "start_date <= 2026-09-16",
+      "actual": "2026-09-14"
+    },
+    {
+      "code": "ACCOUNT_IDENTITY",
+      "status": "passed",
+      "expected": null,
+      "actual": null
+    }
+  ]
+}

@@ -1,0 +1,292 @@
+{
+  "version": 2,
+  "authored_on": "2026-10-09",
+  "author": "Codex, commissioned by the project maintainer",
+  "license": "MIT",
+  "construction": "Literal invented scenarios in corpus/generate.py; no input samples or parser output consumed",
+  "generator_sha256": "ed767c7acf2b1f4ec3dbb1192433c46c8b0be88e09e16662eb17a8a6a239a940",
+  "files": [
+    {
+      "path": "corpus/camt053/all_fields.camt053.xml",
+      "sha256": "4a3f17645458f6e131a5b7a90c6b0f47405c42e5ff1917317a3c75ad402794f8",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/camt053/all_fields.expected.json",
+      "sha256": "2dd3419b1c3dface8cff6ce894a83c6848fa8029fc9d1cba7a814d1e18040278",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/camt053/basic_valid.camt053.xml",
+      "sha256": "6dccbec7e1dc7600081870e7b9b45b5c29915d474f26d77fa3b7b7eb0314b5b7",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/camt053/basic_valid.expected.json",
+      "sha256": "074a6d35e7639aaec1aeeb128dd551d137eb92aae7c6f5b0aa719be80bb1fb38",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/camt053/multiple_statements.camt053.xml",
+      "sha256": "f6ccd3eb776ac9cb1b8b1d3cf45e5dd1ab6dccf60f42b8f05b441e7150593ea6",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/camt053/multiple_statements.expected.json",
+      "sha256": "eacec9cbfca9d830c2d573632dcbf4c3d85922178f660afe8abf30d5bd9fe8a9",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/csv/all_fields.csv",
+      "sha256": "ea55b1ee80380371e43869a5c72d848afe8ce580b4f058540d27717950aa7bce",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/csv/all_fields.expected.json",
+      "sha256": "5fc9daca9139297716c74c61c716a29ca084cabd3df71bccb849b76303c870a6",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/csv/ambiguous_amount.csv",
+      "sha256": "6d957fe18d0c1164d559442b57f168f390ceda4eb3979a72938fb79e3ef12e94",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/csv/ambiguous_amount.expected.json",
+      "sha256": "c0b45e81b02dc849009de66e6b22cd4f2cb3f0dcf8fb04a688a66b03e15dac06",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/csv/basic_valid.csv",
+      "sha256": "b59eba0f5fd48f5d75e359c43948d1da513af86e8ab68b95b79717a7c61d9c52",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/csv/basic_valid.expected.json",
+      "sha256": "2d96334abffbb7d0dd008e7cba5cf959c7df3453b9bdebd2ce948f428b4784f9",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/csv/duplicate_header.csv",
+      "sha256": "9e9f1436487e3b1eef6524ac913168178b82642334133352a9c9f6bb90be11ad",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/csv/duplicate_header.expected.json",
+      "sha256": "35af6a31191cf4a98f3bf51afbc08dd30fea3af220f38c735b0e028332cabec2",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/csv/malformed_row.csv",
+      "sha256": "99db28b6c952f2c6ea76b56c703f42c74c58e7bc9ce37ca61919d968614109a2",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/csv/malformed_row.expected.json",
+      "sha256": "76f0d29ca2fa5e0b33fb428e476e579e62645cf4aa8bb2564aa301d287e56a27",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/csv/negative_debit.csv",
+      "sha256": "f4d658c637bf33f3d2fdc0731749b2154c3af0ee924256feed5858b62e8dc977",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/csv/negative_debit.expected.json",
+      "sha256": "0d8ec5798420689cc429f581cff1b4c7184f32469015c66f7bd52d1612178f7b",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/csv/split_debit_credit.csv",
+      "sha256": "25b819d859cc2bd6e19cd762a7941a7e65f395769e3634eeb592398842e55e13",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/mt940/balance_mismatch.expected.json",
+      "sha256": "a9ef5927e40f6c51989a9a566711695a3e137f49be2f2defb182295693606943",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/mt940/balance_mismatch.mt940",
+      "sha256": "0e95ad793e3263c12db867f47e630b27f0c4c82a2c08e6d0636860fb6764a39b",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/mt940/basic_valid.expected.json",
+      "sha256": "17f271f60c6e2dbea7d4ecfb621a53e59fdbe2cbdfbe8d180c987caa384d948b",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/mt940/basic_valid.mt940",
+      "sha256": "6b2458b4a489992fba34e6bcf920c45ce466772019f983aab2fb3e70cceafc5a",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/mt940/currency_conflict.expected.json",
+      "sha256": "3cd8b02097ec7d1a683d22625abb141f21fa818958ef0649aebeaf523b2fdbc8",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/mt940/currency_conflict.mt940",
+      "sha256": "ae7e39407401d2e342d3e76804a8559c7eb0d50552d7e4289d55655767fb33fd",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/mt940/missing_closing_balance.expected.json",
+      "sha256": "e0775087eb19d85c115a557f550989f9c063598de4efbf3c1fe5fe50151858b1",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/mt940/missing_closing_balance.mt940",
+      "sha256": "c561c5101fe7f299664b0904d852e3743e653367953ecce19d6d7b28bf8f4a3c",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/mt940/missing_description.expected.json",
+      "sha256": "3b6fbd41d3b6394094ab538686951d9e35cf3cd2a9b7b04bd79f311cf54ce038",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/mt940/missing_description.mt940",
+      "sha256": "dba237eae07daa9cdf8004b612be535cfef60392e8f4598e4c7ee99fb7d937cd",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/mt940/missing_opening_balance.expected.json",
+      "sha256": "051853338382f80047a817f0a57d4452713bb252a095dacf82f74b8f2d944e94",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/mt940/missing_opening_balance.mt940",
+      "sha256": "460f49becc095900f846309f434592de4580bca59be433bb386b75adb0ad9b06",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/mt940/multiple_accounts.expected.json",
+      "sha256": "eacec9cbfca9d830c2d573632dcbf4c3d85922178f660afe8abf30d5bd9fe8a9",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/mt940/multiple_accounts.mt940",
+      "sha256": "946e18c08e0b2f8b6b08a111c82c90ab17a70b8b9d674fc8d7d87d75850cc104",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/mt940/multiple_statements.expected.json",
+      "sha256": "eacec9cbfca9d830c2d573632dcbf4c3d85922178f660afe8abf30d5bd9fe8a9",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/mt940/multiple_statements.mt940",
+      "sha256": "b9262b45322e51310dffdcc74a7b9217de80e3ff949c21314be3db414faa887b",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/mt940/no_activity.expected.json",
+      "sha256": "6f7c461da718f7e70a71a92f7c566f55017fdc1c3a9b405447ea338c56910682",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/mt940/no_activity.mt940",
+      "sha256": "e92d0dedc127a96aa15af1d9ff20245d9237c239a6644b91246fde7ed8de2779",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/mt940/reversals.expected.json",
+      "sha256": "931f09dd021851592bc0fdcf939af29d81220d2371cda8cc4ba7a63603d4b7ae",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/mt940/reversals.mt940",
+      "sha256": "b485cd554698b279e563cd085a1e9dd817bd2541c147ffd200a11ab5ba2fcede",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/ofx/basic_valid.expected.json",
+      "sha256": "820780d5a5b70703ae45c7ca006d43bb11caed8fbeaa81649e53e36512b3c907",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/ofx/basic_valid.ofx",
+      "sha256": "f80b7d7bb7829861f653d212fa394323cad64e2a7858ab5201bba3b03e08c4b9",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/ofx/basic_valid.qfx",
+      "sha256": "bbd6e9f45a5c866d1635e8d435c3c73c93da2daf4bb43784182c9fe3a5e26ef3",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/ofx/basic_valid.qfx.expected.json",
+      "sha256": "6ae36ccaac2b9008118f7f2052afbbc652a531a6c61f20274b935ea82976ef76",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/ofx/multiple_statements.expected.json",
+      "sha256": "eacec9cbfca9d830c2d573632dcbf4c3d85922178f660afe8abf30d5bd9fe8a9",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/ofx/multiple_statements.ofx",
+      "sha256": "3988210906c647f8465e9572502abe0a31e5375583a40b1d1f7ced7446b89cf0",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/ofx/windows1252.expected.json",
+      "sha256": "4739f70bb52513644fd9e78e0b34b2cdce47c1bfc4f88879ea335c9be4418bb4",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    },
+    {
+      "path": "corpus/ofx/windows1252.ofx",
+      "sha256": "cee5809152b1aeb6e309e37eff994ade02976dbc21ab316668ae002f32fb60d1",
+      "provenance_status": "independently_authored",
+      "publication_permission": "project_MIT"
+    }
+  ]
+}

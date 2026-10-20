@@ -1,0 +1,3 @@
+Date,Narrative,Debit,Credit,Currency,Account
+2026-09-14,Test contribution,,500.00,GBP,SYNTH-ACCOUNT-1
+2026-09-15,Test materials,18.75,,GBP,SYNTH-ACCOUNT-1

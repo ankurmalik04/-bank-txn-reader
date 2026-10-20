@@ -1,0 +1,67 @@
+{
+  "audited_on": "2026-10-09",
+  "pip_audit_version": "2.10.1",
+  "services": [
+    "pypi",
+    "osv"
+  ],
+  "runtime_package_count": 18,
+  "profile_counts": {
+    "base": 1,
+    "ofx": 8,
+    "camt": 15,
+    "alternative": 15,
+    "all": 18
+  },
+  "sets": {
+    "installed": {
+      "pypi": {
+        "audited": 18,
+        "skipped": 0,
+        "advisories": 0
+      },
+      "osv": {
+        "audited": 18,
+        "skipped": 0,
+        "advisories": 0
+      }
+    },
+    "resolved": {
+      "pypi": {
+        "audited": 18,
+        "skipped": 0,
+        "advisories": 0
+      },
+      "osv": {
+        "audited": 18,
+        "skipped": 0,
+        "advisories": 0
+      }
+    }
+  },
+  "ignored_vulnerabilities": [],
+  "license_review": "Shipped top-level license files and native-wheel/component exceptions; see THIRD_PARTY_NOTICES.md",
+  "lxml_floor": "6.1.3 <= lxml < 7 for all optional backend profiles",
+  "native_versions": {
+    "lxml": "6.1.3",
+    "libxml2": "2.14.6",
+    "libxslt": "1.1.43",
+    "numpy_blas": "system Accelerate on inspected macOS arm64 wheel"
+  },
+  "native_advisory_scope": [
+    {
+      "id": "CVE-2026-0989",
+      "assessment": "Attacker-controlled RelaxNG schema path is not used by current API; inference from code review"
+    },
+    {
+      "id": "CVE-2026-6732",
+      "assessment": "XSD validation path is not used by current API; inference from code review"
+    }
+  ],
+  "limitations": [
+    "Exact installed/fresh versions on macOS arm64/Python 3.14.7 only; not every allowed version or platform",
+    "PyPI/OSV package scans do not establish complete native/OS coverage",
+    "No general clearance for redistributing dependency wheels or containers",
+    "GitHub private reporting selected; activation and verification on the future public repository remain launch tasks"
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "account": {
+    "id": "GB75TEST00000000000001",
+    "iban": null,
+    "currency": "GBP"
+  },
+  "statement": {
+    "id": "5",
+    "sequence": "1",
+    "start_date": "2026-09-15",
+    "end_date": "2026-09-15",
+    "opening_balance": null,
+    "closing_balance": "37.00",
+    "opening_balance_currency": null,
+    "closing_balance_currency": "GBP"
+  },
+  "transactions": [
+    {
+      "booking_date": null,
+      "value_date": "2026-09-15",
+      "amount": "7.00",
+      "currency": "GBP",
+      "description": "Test credit without opening",
+      "reference": "CREDIT",
+      "transaction_id": null,
+      "counterparty": {
+        "name": null,
+        "account_id": null,
+        "iban": null
+      }
+    }
+  ],
+  "validation_status": "warning",
+  "warning_codes": [
+    "MISSING_OPENING_BALANCE"
+  ],
+  "validation_checks": [
+    {
+      "code": "BALANCE_RECONCILIATION",
+      "status": "skipped",
+      "expected": null,
+      "actual": null
+    },
+    {
+      "code": "CURRENCY_CONSISTENCY",
+      "status": "passed",
+      "expected": null,
+      "actual": null
+    },
+    {
+      "code": "FINITE_AMOUNTS",
+      "status": "passed",
+      "expected": null,
+      "actual": null
+    },
+    {
+      "code": "STATEMENT_DATE_ORDER",
+      "status": "passed",
+      "expected": "start_date <= 2026-09-15",
+      "actual": "2026-09-15"
+    },
+    {
+      "code": "ACCOUNT_IDENTITY",
+      "status": "passed",
+      "expected": null,
+      "actual": null
+    }
+  ]
+}

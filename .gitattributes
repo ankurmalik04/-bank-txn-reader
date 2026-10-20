@@ -1,0 +1,6 @@
+# Keep source and workflow files consistent across platforms.
+* text=auto eol=lf
+
+# Corpus bytes are generated and hashed, including non-UTF-8 bank exports.
+# Git must not rewrite their encodings or line endings on checkout.
+corpus/** -text

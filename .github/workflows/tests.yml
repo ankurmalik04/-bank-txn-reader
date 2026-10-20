@@ -1,0 +1,188 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: python -m pip install -e ".[dev,all]"
+      - name: Lint
+        run: ruff check src tests corpus/generate.py scripts
+      - name: Verify independently authored corpus
+        run: python corpus/generate.py --check
+      - name: Type check
+        run: mypy src/bankparser
+      - name: Build package
+        run: python -m build
+      - name: Check package metadata/content and generate checksums
+        run: python scripts/check_distribution.py dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-inputs
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7
+
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        include:
+          - os: macos-latest
+            python-version: "3.14"
+          - os: windows-latest
+            python-version: "3.14"
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install
+        run: python -m pip install -e ".[dev,all]"
+      - name: Test with coverage
+        run: pytest --cov=bankparser --cov-branch --cov-report=term-missing
+
+  base-install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - run: python -m pip install -e ".[dev]"
+      - run: python -m pytest -ra
+      - name: Verify lightweight CSV installation
+        run: |
+          python -c 'import importlib.util; from pathlib import Path; from bankparser import parse; assert importlib.util.find_spec("bankstatementparser") is None; assert importlib.util.find_spec("pandas") is None; assert parse(Path("corpus/csv/basic_valid.csv")).source.implementation == "native"'
+
+  distributions:
+    needs: quality
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.12"]
+        profile: [base, csv, ofx, camt, alternative, all]
+        artifact: [wheel, sdist]
+        include:
+          - {os: macos-latest, python-version: "3.14", profile: base, artifact: wheel}
+          - {os: macos-latest, python-version: "3.14", profile: csv, artifact: wheel}
+          - {os: macos-latest, python-version: "3.14", profile: ofx, artifact: wheel}
+          - {os: macos-latest, python-version: "3.14", profile: camt, artifact: wheel}
+          - {os: macos-latest, python-version: "3.14", profile: alternative, artifact: wheel}
+          - {os: macos-latest, python-version: "3.14", profile: all, artifact: wheel}
+          - {os: windows-latest, python-version: "3.14", profile: base, artifact: wheel}
+          - {os: windows-latest, python-version: "3.14", profile: csv, artifact: wheel}
+          - {os: windows-latest, python-version: "3.14", profile: ofx, artifact: wheel}
+          - {os: windows-latest, python-version: "3.14", profile: camt, artifact: wheel}
+          - {os: windows-latest, python-version: "3.14", profile: alternative, artifact: wheel}
+          - {os: windows-latest, python-version: "3.14", profile: all, artifact: wheel}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-inputs
+          path: dist/
+      - name: Install actual artifact into a clean runtime environment
+        shell: python
+        env:
+          INSTALL_PROFILE: ${{ matrix.profile }}
+          PACKAGE_ARTIFACT: ${{ matrix.artifact }}
+        run: |
+          import hashlib, os, pathlib, subprocess, venv
+          dist = pathlib.Path("dist")
+          for line in (dist / "SHA256SUMS").read_text().splitlines():
+              digest, name = line.split("  ", 1)
+              assert hashlib.sha256((dist / name).read_bytes()).hexdigest() == digest
+          root = pathlib.Path(os.environ["RUNNER_TEMP"]) / "bankparser-runtime"
+          venv.create(root, with_pip=True)
+          interpreter = root / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+          suffix = "*.whl" if os.environ["PACKAGE_ARTIFACT"] == "wheel" else "*.tar.gz"
+          packages = list(dist.glob(suffix))
+          assert len(packages) == 1
+          target = str(packages[0].resolve())
+          profile = os.environ["INSTALL_PROFILE"]
+          if profile != "base":
+              target += "[" + profile + "]"
+          subprocess.run([str(interpreter), "-m", "pip", "install", target], check=True)
+          subprocess.run([str(interpreter), "-m", "pip", "check"], check=True)
+          subprocess.run([str(interpreter), "-I", "scripts/check_install.py", "--profile", profile, "--corpus", "corpus"], check=True)
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env:
+              env.write("RUNTIME_PYTHON=" + str(interpreter) + "\n")
+              env.write("RUNTIME_INVENTORY=" + str(root.parent / "runtime-inventory") + "\n")
+      - name: Install audit tools outside the tested runtime
+        run: python -m pip install pip-audit==2.10.1
+      - name: Inventory and audit the exact tested runtime
+        shell: python
+        env:
+          INSTALL_PROFILE: ${{ matrix.profile }}
+        run: |
+          import os, pathlib, subprocess, sys
+          profile = os.environ["INSTALL_PROFILE"]
+          inventory = pathlib.Path(os.environ["RUNTIME_INVENTORY"])
+          subprocess.run([sys.executable, "scripts/inventory_dependencies.py", "--python", os.environ["RUNTIME_PYTHON"], "--profile", profile, "--output", str(inventory)], check=True)
+          failures = []
+          for service in ("pypi", "osv"):
+              result = subprocess.run([sys.executable, "-m", "pip_audit", "-r", str(inventory / (profile + ".txt")), "--no-deps", "--disable-pip", "--strict", "--vulnerability-service", service, "--progress-spinner", "off", "--format", "json", "--output", str(inventory / (service + ".json"))], check=False)
+              if result.returncode:
+                  failures.append(service)
+          if failures:
+              sys.exit("Runtime audit failed: " + ", ".join(failures))
+      - name: Retain runtime inventory and advisory reports
+        if: ${{ !cancelled() && env.RUNTIME_INVENTORY != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: runtime-audit-${{ matrix.os }}-${{ matrix.python-version }}-${{ matrix.profile }}-${{ matrix.artifact }}
+          path: ${{ env.RUNTIME_INVENTORY }}/
+          if-no-files-found: error
+          retention-days: 30
+
+  ofx-install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e ".[dev,ofx]"
+      - run: python -m pytest -ra
+      - name: Verify OFX without the DataFrame backend
+        run: |
+          python -c 'import importlib.util, sys; from pathlib import Path; from bankparser import parse; assert all(importlib.util.find_spec(name) is None for name in ("bankstatementparser", "pandas", "numpy")); assert parse(Path("corpus/ofx/basic_valid.ofx")).source.implementation == "ofxparse"; assert "pandas" not in sys.modules'
+
+  release-candidate:
+    needs: [quality, test, base-install, ofx-install, distributions]
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-inputs
+          path: dist/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: validated-distributions
+          path: dist/
+          if-no-files-found: error
+          retention-days: 30

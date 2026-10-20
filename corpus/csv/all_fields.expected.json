@@ -1,0 +1,70 @@
+{
+  "account": {
+    "id": "SYNTH-ACCOUNT-1",
+    "iban": null,
+    "currency": "GBP"
+  },
+  "statement": {
+    "id": null,
+    "sequence": null,
+    "start_date": "2026-09-14",
+    "end_date": "2026-09-15",
+    "opening_balance": null,
+    "closing_balance": null,
+    "opening_balance_currency": null,
+    "closing_balance_currency": null
+  },
+  "transactions": [
+    {
+      "booking_date": "2026-09-14",
+      "value_date": "2026-09-15",
+      "amount": "-9.25",
+      "currency": "GBP",
+      "description": "Test invoice",
+      "reference": "SYNTH-INV-1",
+      "transaction_id": "SYNTH-TX-1",
+      "counterparty": {
+        "name": null,
+        "account_id": null,
+        "iban": null
+      }
+    }
+  ],
+  "validation_status": "warning",
+  "warning_codes": [
+    "MISSING_CLOSING_BALANCE",
+    "MISSING_OPENING_BALANCE"
+  ],
+  "validation_checks": [
+    {
+      "code": "BALANCE_RECONCILIATION",
+      "status": "skipped",
+      "expected": null,
+      "actual": null
+    },
+    {
+      "code": "CURRENCY_CONSISTENCY",
+      "status": "passed",
+      "expected": null,
+      "actual": null
+    },
+    {
+      "code": "FINITE_AMOUNTS",
+      "status": "passed",
+      "expected": null,
+      "actual": null
+    },
+    {
+      "code": "STATEMENT_DATE_ORDER",
+      "status": "passed",
+      "expected": "start_date <= 2026-09-15",
+      "actual": "2026-09-14"
+    },
+    {
+      "code": "ACCOUNT_IDENTITY",
+      "status": "passed",
+      "expected": null,
+      "actual": null
+    }
+  ]
+}

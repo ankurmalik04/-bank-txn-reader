@@ -1,0 +1,32 @@
+name: runtime dependency audit
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "23 8 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  runtime-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install runtime separately from audit tools
+        run: |
+          python -m venv /tmp/bankparser-audit-runtime
+          /tmp/bankparser-audit-runtime/bin/python -m pip install ".[all]"
+          python -m pip install pip-audit==2.10.1
+      - name: Inventory complete runtime closure
+        run: python scripts/inventory_dependencies.py --python /tmp/bankparser-audit-runtime/bin/python --output /tmp/bankparser-runtime-inventory
+      - name: Check PyPI advisory service
+        run: python -m pip_audit -r /tmp/bankparser-runtime-inventory/all.txt --no-deps --disable-pip --strict --vulnerability-service pypi --progress-spinner off
+      - name: Check OSV advisory service
+        run: python -m pip_audit -r /tmp/bankparser-runtime-inventory/all.txt --no-deps --disable-pip --strict --vulnerability-service osv --progress-spinner off

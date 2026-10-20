@@ -1,0 +1,3 @@
+Booking Date,Description,Amount,Currency,IBAN,Reference,Balance
+2026-09-14,Test contribution,500.00,GBP,GB75TEST00000000000001,SYNTH-PAY-1,500.00
+2026-09-15,Test materials,-18.75,GBP,GB75TEST00000000000001,SYNTH-PAY-2,481.25

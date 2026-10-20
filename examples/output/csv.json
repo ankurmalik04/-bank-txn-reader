@@ -1,0 +1,138 @@
+{
+  "schema_version": "1.1",
+  "source": {
+    "format": "csv",
+    "implementation": "native",
+    "implementation_version": "0.5.0",
+    "bankparser_version": "0.5.0",
+    "file_name": "basic_valid.csv"
+  },
+  "account": {
+    "id": "GB75TEST00000000000001",
+    "iban": "GB75TEST00000000000001",
+    "currency": "GBP"
+  },
+  "statement": {
+    "id": null,
+    "sequence": null,
+    "start_date": "2026-09-14",
+    "end_date": "2026-09-15",
+    "opening_balance": null,
+    "closing_balance": null,
+    "opening_balance_currency": null,
+    "closing_balance_currency": null
+  },
+  "transactions": [
+    {
+      "booking_date": "2026-09-14",
+      "value_date": null,
+      "amount": "500.00",
+      "currency": "GBP",
+      "description": "Test contribution",
+      "counterparty": {
+        "name": null,
+        "account_id": null,
+        "iban": null
+      },
+      "reference": "SYNTH-PAY-1",
+      "transaction_id": null,
+      "raw": {
+        "source_line": 2,
+        "source_fields": {
+          "Booking Date": "2026-09-14",
+          "Description": "Test contribution",
+          "Amount": "500.00",
+          "Currency": "GBP",
+          "IBAN": "GB75TEST00000000000001",
+          "Reference": "SYNTH-PAY-1",
+          "Balance": "500.00"
+        },
+        "source_balance": "500.00"
+      }
+    },
+    {
+      "booking_date": "2026-09-15",
+      "value_date": null,
+      "amount": "-18.75",
+      "currency": "GBP",
+      "description": "Test materials",
+      "counterparty": {
+        "name": null,
+        "account_id": null,
+        "iban": null
+      },
+      "reference": "SYNTH-PAY-2",
+      "transaction_id": null,
+      "raw": {
+        "source_line": 3,
+        "source_fields": {
+          "Booking Date": "2026-09-15",
+          "Description": "Test materials",
+          "Amount": "-18.75",
+          "Currency": "GBP",
+          "IBAN": "GB75TEST00000000000001",
+          "Reference": "SYNTH-PAY-2",
+          "Balance": "481.25"
+        },
+        "source_balance": "481.25"
+      }
+    }
+  ],
+  "validation": {
+    "status": "warning",
+    "checks": [
+      {
+        "code": "BALANCE_RECONCILIATION",
+        "status": "skipped",
+        "message": "Opening and closing balances are both required",
+        "expected": null,
+        "actual": null
+      },
+      {
+        "code": "CURRENCY_CONSISTENCY",
+        "status": "passed",
+        "message": "Canonical data uses one currency: GBP",
+        "expected": null,
+        "actual": null
+      },
+      {
+        "code": "FINITE_AMOUNTS",
+        "status": "passed",
+        "message": "All canonical monetary values are finite decimals",
+        "expected": null,
+        "actual": null
+      },
+      {
+        "code": "STATEMENT_DATE_ORDER",
+        "status": "passed",
+        "message": "Statement start date does not exceed end date",
+        "expected": "start_date <= 2026-09-15",
+        "actual": "2026-09-14"
+      },
+      {
+        "code": "ACCOUNT_IDENTITY",
+        "status": "passed",
+        "message": "An account identifier is available (not independently verified)",
+        "expected": null,
+        "actual": null
+      }
+    ]
+  },
+  "warnings": [
+    {
+      "code": "MISSING_OPENING_BALANCE",
+      "message": "Opening balance is unavailable with generic CSV semantics",
+      "location": null
+    },
+    {
+      "code": "MISSING_CLOSING_BALANCE",
+      "message": "Closing balance is unavailable with generic CSV semantics",
+      "location": null
+    },
+    {
+      "code": "CSV_BALANCE_ORDER_UNKNOWN",
+      "message": "Running balance is preserved; its ordering and timing are unknown",
+      "location": "CSV line 2, column 'Balance'"
+    }
+  ]
+}
