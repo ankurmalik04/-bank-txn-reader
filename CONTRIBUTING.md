@@ -26,8 +26,8 @@ account numbers, payment references and other confidential information before
 opening a public issue. Preserve the formatting that triggers the problem.
 
 For vulnerabilities or sensitive security concerns, follow
-[SECURITY.md](SECURITY.md) and use GitHub private reporting once activated on the
-public repository. Keep vulnerability details out of public issues and pull
+[SECURITY.md](SECURITY.md) and use GitHub private vulnerability reporting on this
+repository. Keep vulnerability details out of public issues and pull
 requests while the report is being assessed.
 
 ## Adding a regression

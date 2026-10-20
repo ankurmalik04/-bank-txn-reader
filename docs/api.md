@@ -1,6 +1,6 @@
 # Python API
 
-This guide describes BankParser 0.5.0 (unreleased), JSON schema 1.1. Install the
+This guide describes BankParser 0.5.0a1, JSON schema 1.1. Install the
 base package for MT940 and native CSV; add extras for CAMT.053, OFX/QFX and
 alternative implementations. See [installation](../README.md#install).
 

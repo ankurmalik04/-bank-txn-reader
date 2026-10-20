@@ -49,7 +49,7 @@ API are future work; current implementations are registered in the library.
 
 ## Install
 
-Python 3.10 or newer. Version 0.5.0 is currently unreleased; install from a checkout:
+Python 3.10 or newer. Version 0.5.0a1 is the first alpha pre-release. Install from a checkout until release assets are published:
 
 ```bash
 python -m venv .venv

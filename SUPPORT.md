@@ -1,7 +1,7 @@
 # Support and compatibility policy
 
-BankParser is an alpha library maintained on a best-effort basis. The current
-0.5.0 development version is unreleased. Only the latest published alpha patch
+BankParser is an alpha library maintained on a best-effort basis. Version
+0.5.0a1 is the first alpha pre-release. Only the latest published alpha patch
 will receive fixes once releases begin; older versions and arbitrary development
 commits have no separate maintenance branch. There is no response-time or
 resolution-time guarantee.

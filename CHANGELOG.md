@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.5.0 — unreleased
+## 0.5.0a1 — first alpha
 
 BankParser preserves statement balance currencies and additional transaction
 fields, and rejects unsupported statement scopes and ambiguous CSV conventions.

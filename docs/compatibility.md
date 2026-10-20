@@ -1,6 +1,6 @@
 # Compatibility and conformance
 
-This describes BankParser 0.5.0, schema 1.1. Coverage is established by synthetic
+This describes BankParser 0.5.0a1, schema 1.1. Coverage is established by synthetic
 fixtures and regression tests. It does not certify a bank, every version of a
 format, or every document an upstream parser accepts.
 
@@ -30,8 +30,7 @@ Inputs are limited to 5 MiB. PDF/image extraction, bank connections and ledger
 matching are outside this library's current support. Splitting multi-statement
 files is the caller's responsibility.
 The [API guide](api.md) describes signatures, errors, result fields and memory
-behaviour. The [roadmap](roadmap.md) records remaining
-coverage and comparison priorities.
+behaviour. The support policy describes the maintenance scope for alpha releases.
 
 ## Fields checked by the golden fixtures
 

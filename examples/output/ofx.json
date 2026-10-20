@@ -4,7 +4,7 @@
     "format": "ofx",
     "implementation": "ofxparse",
     "implementation_version": "0.21",
-    "bankparser_version": "0.5.0",
+    "bankparser_version": "0.5.0a1",
     "file_name": "basic_valid.ofx"
   },
   "account": {

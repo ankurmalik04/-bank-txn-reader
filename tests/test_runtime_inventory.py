@@ -17,7 +17,7 @@ def installed():
         "environment": {"python_version": "3.12", "sys_platform": "win32"},
         "packages": [
             package(
-                "bankparser-runtime", "0.5.0",
+                "bankparser-runtime", "0.5.0a1",
                 [
                     "mt-940>=5.1.1,<6",
                     'ofxparse==0.21; extra == "ofx" or extra == "all"',
