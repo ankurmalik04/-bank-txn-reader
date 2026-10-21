@@ -4,6 +4,8 @@ This describes BankParser 0.5.0a1, schema 1.1. Coverage is established by synthe
 fixtures and regression tests. It does not certify a bank, every version of a
 format, or every document an upstream parser accepts.
 
+The next evidence milestone follows the [bank/exporter sample conformance plan](conformance-plan.md): 3–5 permitted profiles with independently reviewed expectations and held-out samples. These profiles are planned, not established support.
+
 ## Install and scope
 
 | Format | Implementation | Installation | Supported scope |

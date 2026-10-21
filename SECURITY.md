@@ -10,7 +10,7 @@ See [SUPPORT.md](SUPPORT.md) for compatibility and support scope.
 ## Report a vulnerability privately
 
 Use GitHub's **Report a vulnerability** option on this repository's **Security
-and quality** tab when private vulnerability reporting is enabled. See
+and quality** tab. Private vulnerability reporting is enabled for the public repository. See
 [GitHub's reporting instructions](https://docs.github.com/en/code-security/how-tos/report-and-fix-vulnerabilities/report-privately).
 If that option is unavailable, open an ordinary issue asking maintainers for a
 private contact. Do not include vulnerability details or sensitive attachments

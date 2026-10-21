@@ -2,7 +2,7 @@
 
 BankParser is an alpha library maintained on a best-effort basis. Version
 0.5.0a1 is the first alpha pre-release. Only the latest published alpha patch
-will receive fixes once releases begin; older versions and arbitrary development
+receives fixes; older versions and arbitrary development
 commits have no separate maintenance branch. There is no response-time or
 resolution-time guarantee.
 
@@ -46,7 +46,7 @@ values and a minimal independently invented reproducer. Follow
 Do not upload real bank statements, account identifiers, payment references,
 credentials or other confidential data to public issues. For security concerns,
 follow [SECURITY.md](SECURITY.md). Use GitHub's private vulnerability reporting
-feature when it is enabled for this repository. If it is unavailable, ask for a
+feature, enabled for the public repository. If it is unavailable, ask for a
 private contact without including vulnerability details or sensitive data.
 
 For deployment on untrusted inputs, retain the input-size limit, avoid logging

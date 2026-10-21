@@ -49,12 +49,13 @@ API are future work; current implementations are registered in the library.
 
 ## Install
 
-Python 3.10 or newer. Version 0.5.0a1 is the first alpha pre-release. Install from a checkout until release assets are published:
+Python 3.10 or newer. Version 0.5.0a1 is the first alpha pre-release. Download the wheel and `SHA256SUMS` from the [0.5.0a1 release](https://github.com/ankurmalik04/-bank-txn-reader/releases/tag/v0.5.0a1), verify its checksum, then install:
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-python -m pip install -e .
+python -m pip install ./bankparser_runtime-0.5.0a1-py3-none-any.whl
+bankparser --version
 ```
 
 | Installation | Purpose | Install from this checkout |
@@ -64,6 +65,11 @@ python -m pip install -e .
 | CAMT | Base plus the current CAMT.053 implementation | `python -m pip install -e ".[camt]"` |
 | Alternative | Base plus the current additional backend for explicit selection | `python -m pip install -e ".[alternative]"` |
 | All | All currently offered implementations | `python -m pip install -e ".[all]"` |
+
+For a downloaded wheel, extras use commands such as
+`python -m pip install "./bankparser_runtime-0.5.0a1-py3-none-any.whl[ofx]"`
+or `[all]`. The table above covers source-checkout installation. PyPI publication
+is deferred.
 
 The base package has one external dependency, `mt-940`; native CSV uses the
 standard library. It does not install pandas, NumPy or XML libraries. The OFX
@@ -76,7 +82,7 @@ The `csv` extra is a compatibility alias that adds no dependencies. Development
 tools are a separate `dev` extra. See the [dependency guide](docs/dependencies.md)
 for exact backend versions, XML security requirements and dependency profiles.
 
-Alpha release assets, when available, will be listed on the project's
+The wheel, source archive and checksums are published on the project's
 [GitHub Releases page](https://github.com/ankurmalik04/-bank-txn-reader/releases).
 Missing-backend errors provide commands for a downloaded wheel and a source
 checkout.

@@ -31,6 +31,7 @@ ROOT_FILES = {
     "THIRD_PARTY_NOTICES.md",
 }
 DOCS = {
+    "docs/conformance-plan.md",
     "docs/api.md",
     "docs/compatibility.md",
     "docs/dependencies.md",
