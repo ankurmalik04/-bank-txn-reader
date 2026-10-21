@@ -49,12 +49,12 @@ API are future work; current implementations are registered in the library.
 
 ## Install
 
-Python 3.10 or newer. Version 0.5.0a1 is the first alpha pre-release. Download the wheel and `SHA256SUMS` from the [0.5.0a1 release](https://github.com/ankurmalik04/-bank-txn-reader/releases/tag/v0.5.0a1), verify its checksum, then install:
+Python 3.10 or newer. Version 0.5.0a2 is an alpha pre-release. Download the wheel and `SHA256SUMS` from the [0.5.0a2 release](https://github.com/ankurmalik04/-bank-txn-reader/releases/tag/v0.5.0a2), verify its checksum, then install:
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-python -m pip install ./bankparser_runtime-0.5.0a1-py3-none-any.whl
+python -m pip install ./bankparser_runtime-0.5.0a2-py3-none-any.whl
 bankparser --version
 ```
 
@@ -67,7 +67,7 @@ bankparser --version
 | All | All currently offered implementations | `python -m pip install -e ".[all]"` |
 
 For a downloaded wheel, extras use commands such as
-`python -m pip install "./bankparser_runtime-0.5.0a1-py3-none-any.whl[ofx]"`
+`python -m pip install "./bankparser_runtime-0.5.0a2-py3-none-any.whl[ofx]"`
 or `[all]`. The table above covers source-checkout installation. PyPI publication
 is deferred.
 
@@ -220,8 +220,8 @@ else:
 ```
 
 Validation runs `BALANCE_RECONCILIATION`, `CURRENCY_CONSISTENCY`,
-`FINITE_AMOUNTS`, `STATEMENT_DATE_ORDER` and `ACCOUNT_IDENTITY`. Unreleased
-source also checks `TRANSACTION_CURRENCIES`, `TRANSACTION_BOOKING_DATES` and
+`FINITE_AMOUNTS`, `STATEMENT_DATE_ORDER` and `ACCOUNT_IDENTITY`. Version
+0.5.0a2 also checks `TRANSACTION_CURRENCIES`, `TRANSACTION_BOOKING_DATES` and
 `TRANSACTION_VALUE_DATES`: missing currencies/dates/bounds are incomplete,
 outside booking dates fail, and outside value dates require settlement review.
 Bounds are inclusive and no automatic grace period applies.

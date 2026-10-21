@@ -1,6 +1,6 @@
 # Compatibility and conformance
 
-This describes BankParser 0.5.0a1, schema 1.1. Coverage is established by synthetic
+This describes BankParser 0.5.0a2, schema 1.1. Coverage is established by synthetic
 fixtures and regression tests. It does not certify a bank, every version of a
 format, or every document an upstream parser accepts.
 
@@ -91,7 +91,7 @@ are not exposed consistently across implementations and are not covered by the
 final-balance compatibility promise.
 
 **CAMT.053:** Source nodes enrich the backend's ordered transaction records after
-a count check. In unreleased source, ordered composite keys (booked amount,
+a count check. In 0.5.0a2, ordered composite keys (booked amount,
 currency, direction, account, booking/value dates, EndToEndId and AcctSvcrRef)
 must also agree before enrichment. Reordered or changed records raise
 `TRANSACTION_ALIGNMENT_MISMATCH`; indistinguishable source keys raise
@@ -112,7 +112,7 @@ documented namespace/version has corpus coverage; this is not full ISO 20022/XSD
 validation. Multi-detail conservation remains an upstream check and has no
 independent batch fixture in this release.
 
-In the unreleased source, reporting-period bounds prefer explicit FrToDt/FrDtTm
+In 0.5.0a2, reporting-period bounds prefer explicit FrToDt/FrDtTm
 and ToDtTm, preserving source-local dates; each absent bound falls back to the
 OPBD/CLBD balance date. Empty, malformed or duplicate explicit bounds raise
 `INVALID_STATEMENT_DATE`; reversed bounds fail shared date-order validation.
@@ -205,7 +205,7 @@ when both balances exist. `CURRENCY_CONSISTENCY` checks available account,
 transaction and opening/closing balance currencies. A missing prerequisite skips
 a check and gives aggregate `warning`; contradictions give `failed`.
 `STATEMENT_DATE_ORDER` fails reversed statement bounds, passes equal or ordered
-bounds and skips when either is absent. In unreleased source,
+bounds and skips when either is absent. In 0.5.0a2,
 `TRANSACTION_CURRENCIES` separately marks missing/blank transaction currencies
 incomplete. Booking dates outside inclusive known bounds fail
 `TRANSACTION_BOOKING_DATES`; missing dates/bounds skip unless a known bound is

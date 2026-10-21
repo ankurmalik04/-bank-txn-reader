@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.0a2 — 21 October 2026
 
 - CAMT enrichment now verifies ordered source/backend keys comprising booked
   amount, currency, direction, account, dates, EndToEndId and AcctSvcrRef before

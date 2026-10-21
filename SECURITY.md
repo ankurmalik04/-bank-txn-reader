@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-BankParser is an alpha library. Version 0.5.0a1 is the first alpha pre-release.
+BankParser is an alpha library. Version 0.5.0a2 is the current alpha pre-release.
 Security fixes will target the latest published alpha patch;
 older releases and development commits have no separate maintenance branch.
 See [SUPPORT.md](SUPPORT.md) for compatibility and support scope.
