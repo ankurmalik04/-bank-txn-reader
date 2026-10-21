@@ -4,7 +4,7 @@
   "author": "Codex, commissioned by the project maintainer",
   "license": "MIT",
   "construction": "Literal invented scenarios in corpus/generate.py; no input samples or parser output consumed",
-  "generator_sha256": "ed767c7acf2b1f4ec3dbb1192433c46c8b0be88e09e16662eb17a8a6a239a940",
+  "generator_sha256": "183b11f695bc8bb1016a404bc47a7154e30f62547194904b10ae14ad6b26b0a6",
   "files": [
     {
       "path": "corpus/camt053/all_fields.camt053.xml",
@@ -14,7 +14,7 @@
     },
     {
       "path": "corpus/camt053/all_fields.expected.json",
-      "sha256": "2dd3419b1c3dface8cff6ce894a83c6848fa8029fc9d1cba7a814d1e18040278",
+      "sha256": "ef0e2a9eb2843296ae7d8561f351c473e988442d4fbca597cb37b72113df7097",
       "provenance_status": "independently_authored",
       "publication_permission": "project_MIT"
     },
@@ -26,7 +26,7 @@
     },
     {
       "path": "corpus/camt053/basic_valid.expected.json",
-      "sha256": "074a6d35e7639aaec1aeeb128dd551d137eb92aae7c6f5b0aa719be80bb1fb38",
+      "sha256": "68cfc0ebf25ce7e1b5f57d25032d6bbc874c145c086c1ac2a6428b2a30fd13ee",
       "provenance_status": "independently_authored",
       "publication_permission": "project_MIT"
     },
@@ -50,7 +50,7 @@
     },
     {
       "path": "corpus/csv/all_fields.expected.json",
-      "sha256": "5fc9daca9139297716c74c61c716a29ca084cabd3df71bccb849b76303c870a6",
+      "sha256": "44e9e64bc0e6e98bc14ac0786fef0a3458ac7dbf69424f33b3ffde8d64373daf",
       "provenance_status": "independently_authored",
       "publication_permission": "project_MIT"
     },
@@ -74,7 +74,7 @@
     },
     {
       "path": "corpus/csv/basic_valid.expected.json",
-      "sha256": "2d96334abffbb7d0dd008e7cba5cf959c7df3453b9bdebd2ce948f428b4784f9",
+      "sha256": "05cd261b13f1e33062787b5b796cc652ac828ed6bc5e4d1d692feca3c456b316",
       "provenance_status": "independently_authored",
       "publication_permission": "project_MIT"
     },
@@ -122,7 +122,7 @@
     },
     {
       "path": "corpus/mt940/balance_mismatch.expected.json",
-      "sha256": "a9ef5927e40f6c51989a9a566711695a3e137f49be2f2defb182295693606943",
+      "sha256": "be7949854da0e0b3907b164bb75082f485ccc694f4cfeedeb185dd9deb23b4d6",
       "provenance_status": "independently_authored",
       "publication_permission": "project_MIT"
     },
@@ -134,7 +134,7 @@
     },
     {
       "path": "corpus/mt940/basic_valid.expected.json",
-      "sha256": "17f271f60c6e2dbea7d4ecfb621a53e59fdbe2cbdfbe8d180c987caa384d948b",
+      "sha256": "f3a442e59a295b6cb0dbdc4b6613dafc88788709a91174f1eeb1f174cc138776",
       "provenance_status": "independently_authored",
       "publication_permission": "project_MIT"
     },
@@ -146,7 +146,7 @@
     },
     {
       "path": "corpus/mt940/currency_conflict.expected.json",
-      "sha256": "3cd8b02097ec7d1a683d22625abb141f21fa818958ef0649aebeaf523b2fdbc8",
+      "sha256": "1b5645f2c1efdb1e7ddeef78cd7863025f63c020399d743bca66fc239d4c02ff",
       "provenance_status": "independently_authored",
       "publication_permission": "project_MIT"
     },
@@ -158,7 +158,7 @@
     },
     {
       "path": "corpus/mt940/missing_closing_balance.expected.json",
-      "sha256": "e0775087eb19d85c115a557f550989f9c063598de4efbf3c1fe5fe50151858b1",
+      "sha256": "05c27f93dea3a6d9965b3a7168c61bbffc0ba65a2028aa67bac8384190a2128d",
       "provenance_status": "independently_authored",
       "publication_permission": "project_MIT"
     },
@@ -170,7 +170,7 @@
     },
     {
       "path": "corpus/mt940/missing_description.expected.json",
-      "sha256": "3b6fbd41d3b6394094ab538686951d9e35cf3cd2a9b7b04bd79f311cf54ce038",
+      "sha256": "870db42094a1032d7d64efef1e311e4ea7ec6e3266f336d4d11105c60b7dbdb6",
       "provenance_status": "independently_authored",
       "publication_permission": "project_MIT"
     },
@@ -182,7 +182,7 @@
     },
     {
       "path": "corpus/mt940/missing_opening_balance.expected.json",
-      "sha256": "051853338382f80047a817f0a57d4452713bb252a095dacf82f74b8f2d944e94",
+      "sha256": "8aabeb8e28f41b20453dc32bfa18e8dc2c20044a45473539a34e2271a3c9da72",
       "provenance_status": "independently_authored",
       "publication_permission": "project_MIT"
     },
@@ -218,7 +218,7 @@
     },
     {
       "path": "corpus/mt940/no_activity.expected.json",
-      "sha256": "6f7c461da718f7e70a71a92f7c566f55017fdc1c3a9b405447ea338c56910682",
+      "sha256": "591c8e356c24efed7eedec2a80d778b3cdb68c71234a312d6554399bfb076215",
       "provenance_status": "independently_authored",
       "publication_permission": "project_MIT"
     },
@@ -230,7 +230,7 @@
     },
     {
       "path": "corpus/mt940/reversals.expected.json",
-      "sha256": "931f09dd021851592bc0fdcf939af29d81220d2371cda8cc4ba7a63603d4b7ae",
+      "sha256": "744dbbbdb1be691815741f3202693d94df3b99df61f0e8fb400729f4cb262f66",
       "provenance_status": "independently_authored",
       "publication_permission": "project_MIT"
     },
@@ -242,7 +242,7 @@
     },
     {
       "path": "corpus/ofx/basic_valid.expected.json",
-      "sha256": "820780d5a5b70703ae45c7ca006d43bb11caed8fbeaa81649e53e36512b3c907",
+      "sha256": "e3a3974ac49b80c50ac9a0940331bffcd626ff3e90bea16718083398b37d313f",
       "provenance_status": "independently_authored",
       "publication_permission": "project_MIT"
     },
@@ -260,7 +260,7 @@
     },
     {
       "path": "corpus/ofx/basic_valid.qfx.expected.json",
-      "sha256": "6ae36ccaac2b9008118f7f2052afbbc652a531a6c61f20274b935ea82976ef76",
+      "sha256": "30e2241910580a53b2d4f634db63eef0482bfee02987879982880da71d34517d",
       "provenance_status": "independently_authored",
       "publication_permission": "project_MIT"
     },
@@ -278,7 +278,7 @@
     },
     {
       "path": "corpus/ofx/windows1252.expected.json",
-      "sha256": "4739f70bb52513644fd9e78e0b34b2cdce47c1bfc4f88879ea335c9be4418bb4",
+      "sha256": "b0461d0b851080d92f9c2f17121e8499693a700f1e180f027df674d74a5d48f5",
       "provenance_status": "independently_authored",
       "publication_permission": "project_MIT"
     },

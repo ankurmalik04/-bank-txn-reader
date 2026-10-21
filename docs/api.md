@@ -99,8 +99,16 @@ caller's Decimal context; validation chooses enough precision for its operands
 and leaves caller settings unchanged.
 
 `STATEMENT_DATE_ORDER` checks that the statement start does not exceed its end;
-either missing bound skips it. Equal bounds pass. It does not restrict booking
-or value dates to that interval. `ACCOUNT_IDENTITY` requires a nonblank account
+either missing bound skips it. Equal bounds pass. `TRANSACTION_CURRENCIES`
+separately skips when any transaction currency is missing or blank, even when
+available currencies agree. `TRANSACTION_BOOKING_DATES` checks inclusive known
+statement bounds: an outside booking date fails; missing dates or bounds skip
+an otherwise noncontradictory check. `TRANSACTION_VALUE_DATES` uses the same
+interval but skips for outside value dates, since settlement may legitimately
+cross reporting boundaries. Such exceptions require review; no grace period or
+silent approval is applied. Reversed periods skip transaction date checks and
+fail STATEMENT_DATE_ORDER. Empty activity passes transaction completeness checks.
+`ACCOUNT_IDENTITY` requires a nonblank account
 ID or IBAN to pass, without independently verifying ownership or validity.
 Missing identity skips that check and adds `MISSING_ACCOUNT_IDENTITY` at
 `account`. Select and verify the destination account before importing.

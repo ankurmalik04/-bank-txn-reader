@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- CAMT enrichment now verifies ordered source/backend keys comprising booked
+  amount, currency, direction, account, dates, EndToEndId and AcctSvcrRef before
+  combining metadata. Changed/reordered records raise TRANSACTION_ALIGNMENT_MISMATCH;
+  indistinguishable source keys raise AMBIGUOUS_TRANSACTION_ALIGNMENT. Legitimate
+  repeated charges remain distinct source records but can require a more explicit
+  profile before they are accepted; no automatic reordering or deduplication occurs.
+- Validation adds TRANSACTION_CURRENCIES for missing/blank transaction currencies,
+  independently of conflicts among known currencies. It adds inclusive booking
+  and value-date range checks. Missing dates/bounds are incomplete; out-of-range
+  booking dates fail, while out-of-range value dates require review and give
+  warning status. No automatic grace period is assumed. Strict CLI validation
+  exits 3 on incomplete checks. Consumers must tolerate the added check codes;
+  some previously passed reports now become warning/failed. Schema fields stay 1.1.
+
 - CAMT statement bounds now prefer explicit FrToDt/FrDtTm and ToDtTm, preserving
   their source-local dates. Each absent bound falls back to its booked balance
   date. Invalid, empty or duplicate explicit bounds raise INVALID_STATEMENT_DATE;

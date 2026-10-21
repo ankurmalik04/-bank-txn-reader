@@ -219,8 +219,12 @@ else:
         print(warning.code, warning.location)
 ```
 
-Validation runs five checks: `BALANCE_RECONCILIATION`, `CURRENCY_CONSISTENCY`,
-`FINITE_AMOUNTS`, `STATEMENT_DATE_ORDER` and `ACCOUNT_IDENTITY`.
+Validation runs `BALANCE_RECONCILIATION`, `CURRENCY_CONSISTENCY`,
+`FINITE_AMOUNTS`, `STATEMENT_DATE_ORDER` and `ACCOUNT_IDENTITY`. Unreleased
+source also checks `TRANSACTION_CURRENCIES`, `TRANSACTION_BOOKING_DATES` and
+`TRANSACTION_VALUE_DATES`: missing currencies/dates/bounds are incomplete,
+outside booking dates fail, and outside value dates require settlement review.
+Bounds are inclusive and no automatic grace period applies.
 Reversed statement bounds fail; missing bounds skip the date-order check.
 Missing account ID and IBAN skip the identity check and add
 `MISSING_ACCOUNT_IDENTITY`; generic CSV remains parseable. A present identifier

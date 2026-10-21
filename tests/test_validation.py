@@ -8,7 +8,7 @@ from bankparser.validation import validate
 
 
 def tx(amount: str, currency: str = "GBP") -> Transaction:
-    return Transaction(None, None, Decimal(amount), currency)
+    return Transaction(date(2026, 9, 15), date(2026, 9, 15), Decimal(amount), currency)
 
 
 def test_balance_reconciliation_passes() -> None:
@@ -179,7 +179,14 @@ def test_statement_date_order_is_independent_of_balance_arithmetic(start, end, s
             opening_balance=Decimal(10),
             closing_balance=Decimal(11),
         ),
-        (tx("1"),),
+        (
+            Transaction(
+                start or date(2026, 9, 15),
+                start or date(2026, 9, 15),
+                Decimal(1),
+                "GBP",
+            ),
+        ),
     )
     checks = {check.code: check for check in result.checks}
     assert checks["BALANCE_RECONCILIATION"].status == "passed"
@@ -216,7 +223,7 @@ def test_account_identity_requires_a_nonblank_identifier(identity, iban, status)
     assert result.status == ("passed" if status == "passed" else "warning")
 
 
-def test_statement_order_does_not_impose_transaction_date_bounds():
+def test_transaction_dates_are_checked_separately_from_statement_order():
     result = validate(
         Account(id="SYNTH", currency="GBP"),
         Statement(
@@ -227,4 +234,7 @@ def test_statement_order_does_not_impose_transaction_date_bounds():
         ),
         (Transaction(date(2026, 9, 20), date(2026, 9, 1), Decimal(1), "GBP"),),
     )
-    assert result.status == "passed"
+    assert result.status == "failed"
+    checks = {c.code: c.status for c in result.checks}
+    assert checks["TRANSACTION_BOOKING_DATES"] == "failed"
+    assert checks["TRANSACTION_VALUE_DATES"] == "skipped"
