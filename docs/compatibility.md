@@ -106,6 +106,15 @@ documented namespace/version has corpus coverage; this is not full ISO 20022/XSD
 validation. Multi-detail conservation remains an upstream check and has no
 independent batch fixture in this release.
 
+In the unreleased source, reporting-period bounds prefer explicit FrToDt/FrDtTm
+and ToDtTm, preserving source-local dates; each absent bound falls back to the
+OPBD/CLBD balance date. Empty, malformed or duplicate explicit bounds raise
+`INVALID_STATEMENT_DATE`; reversed bounds fail shared date-order validation.
+Meaningful Refs/TxId maps to `transaction_id`, independently of EndToEndId in
+`reference`. Missing, empty or NOTPROVIDED IDs remain null; identifiers require
+account/statement context and are not guaranteed unique. Published 0.5.0a1 uses
+balance dates and leaves CAMT transaction_id null; see the changelog.
+
 **OFX/QFX:** The default `ofxparse` adapter supports the exercised single bank/card
 profile: SGML headers `OFXHEADER:100`, `DATA:OFXSGML`, version 102/103/160,
 unencrypted/uncompressed input; or well-formed, unnamespaced XML. SGML leaf end

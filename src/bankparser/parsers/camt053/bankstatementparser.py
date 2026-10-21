@@ -136,8 +136,12 @@ class BankStatementParserCamt053Adapter:
             statement=Statement(
                 id=statement_id,
                 sequence=sequence,
-                start_date=_balance_date(balance_records, "OPBD"),
-                end_date=_balance_date(balance_records, "CLBD"),
+                start_date=_statement_date(
+                    statement_node, "FrDtTm", balance_records, "OPBD"
+                ),
+                end_date=_statement_date(
+                    statement_node, "ToDtTm", balance_records, "CLBD"
+                ),
                 opening_balance=opening,
                 closing_balance=closing,
                 opening_balance_currency=_balance_currency(statement_node, "OPBD"),
@@ -193,7 +197,7 @@ def _map_transaction(
             iban=source.get("debtor_iban" if amount > 0 else "creditor_iban"),
         ),
         reference=reference,
-        transaction_id=None,
+        transaction_id=_meaningful_reference(source.get("transaction_id")),
         raw=raw,
     )
 
@@ -228,6 +232,7 @@ def _source_transactions(statement: Any) -> list[dict[str, Any]]:
             )
             structured_refs = detail.findall("./RmtInf/Strd//Ref")
             record = {
+                "transaction_id": _element_text(detail, "./Refs/TxId"),
                 "description": "\n".join(
                     node.text.strip()
                     for node in narrative
@@ -297,6 +302,25 @@ def _element_text(element: Any, path: str) -> str | None:
     if element is None or not hasattr(element, "findtext"):
         return None
     return _text(element.findtext(path))
+
+
+def _statement_date(
+    statement: Any, bound: str, records: list[dict[str, Any]], balance_code: str
+) -> date | None:
+    nodes = statement.findall(f"./FrToDt/{bound}")
+    if not nodes:
+        return _balance_date(records, balance_code)
+    value = _text(nodes[0].text)
+    try:
+        if len(nodes) != 1 or value is None or "T" not in value:
+            raise ValueError("Expected one ISO datetime")
+        return datetime.fromisoformat(value.replace("Z", "+00:00")).date()
+    except ValueError as exc:
+        raise ParseError(
+            "Invalid explicit CAMT reporting-period bound",
+            code="INVALID_STATEMENT_DATE",
+            location=f"Stmt/FrToDt/{bound}",
+        ) from exc
 
 
 def _balance_date(records: list[dict[str, Any]], code: str) -> date | None:

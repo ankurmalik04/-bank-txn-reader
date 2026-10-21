@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+- CAMT statement bounds now prefer explicit FrToDt/FrDtTm and ToDtTm, preserving
+  their source-local dates. Each absent bound falls back to its booked balance
+  date. Invalid, empty or duplicate explicit bounds raise INVALID_STATEMENT_DATE;
+  reversed bounds fail shared validation. Existing callers may observe different
+  reporting dates when balance dates differ from the declared reporting period.
+- CAMT transaction_id now preserves meaningful source Refs/TxId independently
+  of reference (EndToEndId priority is unchanged). Missing, empty or NOTPROVIDED
+  IDs remain null. IDs are not assumed globally unique or safe deduplication keys.
+  Model fields and canonical schema version remain unchanged.
+
 ## 0.5.0a1 — first alpha
 
 BankParser preserves statement balance currencies and additional transaction
