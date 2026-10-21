@@ -1,5 +1,31 @@
 # Changelog
 
+## Unreleased
+
+- CAMT enrichment now verifies ordered source/backend keys comprising booked
+  amount, currency, direction, account, dates, EndToEndId and AcctSvcrRef before
+  combining metadata. Changed/reordered records raise TRANSACTION_ALIGNMENT_MISMATCH;
+  indistinguishable source keys raise AMBIGUOUS_TRANSACTION_ALIGNMENT. Legitimate
+  repeated charges remain distinct source records but can require a more explicit
+  profile before they are accepted; no automatic reordering or deduplication occurs.
+- Validation adds TRANSACTION_CURRENCIES for missing/blank transaction currencies,
+  independently of conflicts among known currencies. It adds inclusive booking
+  and value-date range checks. Missing dates/bounds are incomplete; out-of-range
+  booking dates fail, while out-of-range value dates require review and give
+  warning status. No automatic grace period is assumed. Strict CLI validation
+  exits 3 on incomplete checks. Consumers must tolerate the added check codes;
+  some previously passed reports now become warning/failed. Schema fields stay 1.1.
+
+- CAMT statement bounds now prefer explicit FrToDt/FrDtTm and ToDtTm, preserving
+  their source-local dates. Each absent bound falls back to its booked balance
+  date. Invalid, empty or duplicate explicit bounds raise INVALID_STATEMENT_DATE;
+  reversed bounds fail shared validation. Existing callers may observe different
+  reporting dates when balance dates differ from the declared reporting period.
+- CAMT transaction_id now preserves meaningful source Refs/TxId independently
+  of reference (EndToEndId priority is unchanged). Missing, empty or NOTPROVIDED
+  IDs remain null. IDs are not assumed globally unique or safe deduplication keys.
+  Model fields and canonical schema version remain unchanged.
+
 ## 0.5.0a1 — first alpha
 
 BankParser preserves statement balance currencies and additional transaction

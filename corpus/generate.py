@@ -95,7 +95,38 @@ def core(
     )
     if identity_status == "skipped":
         warnings.append("MISSING_ACCOUNT_IDENTITY")
-    statuses = (status, currency_status, date_status, identity_status)
+    transaction_currency_status = (
+        "passed"
+        if all((t["currency"] or "").strip() for t in transactions)
+        else "skipped"
+    )
+
+    def date_range_status(field, booking):
+        if not transactions:
+            return "passed"
+        if start is not None and end is not None and start > end:
+            return "skipped"
+        dates = [t[field] for t in transactions]
+        outside = any(
+            d is not None
+            and ((start is not None and d < start) or (end is not None and d > end))
+            for d in dates
+        )
+        if outside:
+            return "failed" if booking else "skipped"
+        return "skipped" if start is None or end is None or None in dates else "passed"
+
+    booking_status = date_range_status("booking_date", True)
+    value_status = date_range_status("value_date", False)
+    statuses = (
+        status,
+        currency_status,
+        date_status,
+        identity_status,
+        transaction_currency_status,
+        booking_status,
+        value_status,
+    )
     return {
         "account": {"id": account, "iban": iban_value, "currency": currency},
         "statement": {
@@ -142,6 +173,14 @@ def core(
                 else None,
                 "actual": start if date_status != "skipped" else None,
             },
+            *[
+                {"code": code, "status": check_status, "expected": None, "actual": None}
+                for code, check_status in (
+                    ("TRANSACTION_CURRENCIES", transaction_currency_status),
+                    ("TRANSACTION_BOOKING_DATES", booking_status),
+                    ("TRANSACTION_VALUE_DATES", value_status),
+                )
+            ],
             {
                 "code": "ACCOUNT_IDENTITY",
                 "status": identity_status,

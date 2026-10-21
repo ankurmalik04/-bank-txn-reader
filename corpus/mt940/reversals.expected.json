@@ -44,7 +44,7 @@
       }
     }
   ],
-  "validation_status": "passed",
+  "validation_status": "warning",
   "warning_codes": [],
   "validation_checks": [
     {
@@ -70,6 +70,24 @@
       "status": "passed",
       "expected": "start_date <= 2026-09-16",
       "actual": "2026-09-14"
+    },
+    {
+      "code": "TRANSACTION_CURRENCIES",
+      "status": "passed",
+      "expected": null,
+      "actual": null
+    },
+    {
+      "code": "TRANSACTION_BOOKING_DATES",
+      "status": "skipped",
+      "expected": null,
+      "actual": null
+    },
+    {
+      "code": "TRANSACTION_VALUE_DATES",
+      "status": "passed",
+      "expected": null,
+      "actual": null
     },
     {
       "code": "ACCOUNT_IDENTITY",

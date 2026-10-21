@@ -33,7 +33,7 @@ class FakeCamtParser:
             <Document><BkToCstmrStmt><Stmt>
               <Id>CAMT-STMT-001</Id><ElctrncSeqNb>1</ElctrncSeqNb>
               <Acct><Id><IBAN>GB75TEST00000000000001</IBAN></Id></Acct>
-              <Ntry><Sts>BOOK</Sts><NtryDtls><TxDtls><RmtInf><Ustrd>Coffee</Ustrd></RmtInf></TxDtls></NtryDtls></Ntry>
+              <Ntry><Amt Ccy="GBP">25.50</Amt><CdtDbtInd>DBIT</CdtDbtInd><BookgDt><Dt>2026-10-02</Dt></BookgDt><ValDt><Dt>2026-10-02</Dt></ValDt><Sts>BOOK</Sts><NtryDtls><TxDtls><Refs><EndToEndId>E2E-001</EndToEndId><AcctSvcrRef>ASR-001</AcctSvcrRef></Refs><RmtInf><Ustrd>Coffee</Ustrd></RmtInf></TxDtls></NtryDtls></Ntry>
             </Stmt></BkToCstmrStmt></Document>
             """
         )

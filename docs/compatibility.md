@@ -91,7 +91,13 @@ are not exposed consistently across implementations and are not covered by the
 final-balance compatibility promise.
 
 **CAMT.053:** Source nodes enrich the backend's ordered transaction records after
-a count check. The declared account currency is preserved independently of entry
+a count check. In unreleased source, ordered composite keys (booked amount,
+currency, direction, account, booking/value dates, EndToEndId and AcctSvcrRef)
+must also agree before enrichment. Reordered or changed records raise
+`TRANSACTION_ALIGNMENT_MISMATCH`; indistinguishable source keys raise
+`AMBIGUOUS_TRANSACTION_ALIGNMENT`, including repeated charges without enough
+distinguishing evidence. Counts alone are insufficient. No automatic reordering
+or deduplication occurs. The declared account currency is preserved independently of entry
 and balance currencies, so contradictions fail `CURRENCY_CONSISTENCY` validation.
 Entries require status `BOOK`, in either direct `Sts` or wrapped `Sts/Cd` form;
 missing, pending, informational or unknown statuses raise
@@ -105,6 +111,15 @@ references and structured remittance references remain in raw metadata. Only the
 documented namespace/version has corpus coverage; this is not full ISO 20022/XSD
 validation. Multi-detail conservation remains an upstream check and has no
 independent batch fixture in this release.
+
+In the unreleased source, reporting-period bounds prefer explicit FrToDt/FrDtTm
+and ToDtTm, preserving source-local dates; each absent bound falls back to the
+OPBD/CLBD balance date. Empty, malformed or duplicate explicit bounds raise
+`INVALID_STATEMENT_DATE`; reversed bounds fail shared date-order validation.
+Meaningful Refs/TxId maps to `transaction_id`, independently of EndToEndId in
+`reference`. Missing, empty or NOTPROVIDED IDs remain null; identifiers require
+account/statement context and are not guaranteed unique. Published 0.5.0a1 uses
+balance dates and leaves CAMT transaction_id null; see the changelog.
 
 **OFX/QFX:** The default `ofxparse` adapter supports the exercised single bank/card
 profile: SGML headers `OFXHEADER:100`, `DATA:OFXSGML`, version 102/103/160,
@@ -190,8 +205,15 @@ when both balances exist. `CURRENCY_CONSISTENCY` checks available account,
 transaction and opening/closing balance currencies. A missing prerequisite skips
 a check and gives aggregate `warning`; contradictions give `failed`.
 `STATEMENT_DATE_ORDER` fails reversed statement bounds, passes equal or ordered
-bounds and skips when either is absent. It does not check transaction dates
-against those bounds. `ACCOUNT_IDENTITY` passes when a nonblank account ID or
+bounds and skips when either is absent. In unreleased source,
+`TRANSACTION_CURRENCIES` separately marks missing/blank transaction currencies
+incomplete. Booking dates outside inclusive known bounds fail
+`TRANSACTION_BOOKING_DATES`; missing dates/bounds skip unless a known bound is
+already contradicted. `TRANSACTION_VALUE_DATES` marks outside value dates
+incomplete for review, allowing legitimate settlement boundary exceptions without
+claiming completeness. Missing dates/bounds also skip; reversed bounds skip both
+range checks. No automatic grace period applies. Empty activity passes these
+transaction checks. `ACCOUNT_IDENTITY` passes when a nonblank account ID or
 IBAN is present; otherwise it skips and parsing adds `MISSING_ACCOUNT_IDENTITY`.
 Generic CSV may omit identity, but callers must select and verify the destination
 account. The presence check does not certify the identifier or its ownership.

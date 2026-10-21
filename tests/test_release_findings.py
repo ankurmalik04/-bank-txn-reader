@@ -71,7 +71,13 @@ def test_camt_mixed_missing_fields_use_only_real_fallbacks(keep_narrative):
     assert "end_to_end_id" not in result.transactions[0].raw
     assert "account_servicer_reference" not in result.transactions[0].raw
     assert result.transactions[1].reference == "SYNTH-E2E-2"
-    assert result.validation.status == "passed"
+    assert result.validation.status == "warning"
+    assert (
+        next(
+            c for c in result.validation.checks if c.code == "TRANSACTION_BOOKING_DATES"
+        ).status
+        == "skipped"
+    )
 
 
 @pytest.mark.parametrize("module", [camt, mt940, ofx])

@@ -60,6 +60,24 @@
       "actual": "2026-09-14"
     },
     {
+      "code": "TRANSACTION_CURRENCIES",
+      "status": "passed",
+      "expected": null,
+      "actual": null
+    },
+    {
+      "code": "TRANSACTION_BOOKING_DATES",
+      "status": "skipped",
+      "expected": null,
+      "actual": null
+    },
+    {
+      "code": "TRANSACTION_VALUE_DATES",
+      "status": "passed",
+      "expected": null,
+      "actual": null
+    },
+    {
       "code": "ACCOUNT_IDENTITY",
       "status": "passed",
       "expected": null,

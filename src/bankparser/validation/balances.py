@@ -31,6 +31,9 @@ def validate(
         _currency_check(account, statement, transactions),
         numeric_check,
         _statement_date_check(statement),
+        _transaction_currency_check(transactions),
+        _transaction_date_check(statement, transactions, "booking_date"),
+        _transaction_date_check(statement, transactions, "value_date"),
         _account_identity_check(account),
     ]
     status: ValidationStatus
@@ -41,6 +44,65 @@ def validate(
     else:
         status = "passed"
     return ValidationResult(status=status, checks=tuple(checks))
+
+
+def _transaction_currency_check(
+    transactions: tuple[Transaction, ...],
+) -> ValidationCheck:
+    missing = [
+        str(i) for i, tx in enumerate(transactions) if not (tx.currency or "").strip()
+    ]
+    return ValidationCheck(
+        code="TRANSACTION_CURRENCIES",
+        status="skipped" if missing else "passed",
+        message="Missing transaction currencies at indices: " + ", ".join(missing)
+        if missing
+        else "Every transaction has a currency (empty activity is complete)",
+    )
+
+
+def _transaction_date_check(
+    statement: Statement, transactions: tuple[Transaction, ...], field: str
+) -> ValidationCheck:
+    code = (
+        "TRANSACTION_BOOKING_DATES"
+        if field == "booking_date"
+        else "TRANSACTION_VALUE_DATES"
+    )
+    if not transactions:
+        return ValidationCheck(code, "passed", "No transactions require date checks")
+    start, end = statement.start_date, statement.end_date
+    if start is not None and end is not None and start > end:
+        return ValidationCheck(code, "skipped", "Statement period is reversed")
+    missing, outside = [], []
+    for i, transaction in enumerate(transactions):
+        value = getattr(transaction, field)
+        if value is None:
+            missing.append(str(i))
+        elif (start is not None and value < start) or (end is not None and value > end):
+            outside.append(str(i))
+    if outside:
+        return ValidationCheck(
+            code,
+            "failed" if field == "booking_date" else "skipped",
+            f"{field} outside inclusive known statement bounds at indices: "
+            + ", ".join(outside)
+            + (
+                "; value-date settlement exceptions require review"
+                if field == "value_date"
+                else ""
+            ),
+        )
+    if missing or start is None or end is None:
+        return ValidationCheck(
+            code,
+            "skipped",
+            "Both period bounds and all transaction dates are required; missing date indices: "
+            + (", ".join(missing) or "none"),
+        )
+    return ValidationCheck(
+        code, "passed", f"All {field} values lie within the inclusive statement period"
+    )
 
 
 def _statement_date_check(statement: Statement) -> ValidationCheck:
@@ -163,8 +225,12 @@ def _currency_check(
     statement: Statement,
     transactions: tuple[Transaction, ...],
 ) -> ValidationCheck:
-    currencies = {tx.currency for tx in transactions if tx.currency is not None}
-    if account.currency is not None:
+    currencies = {
+        tx.currency
+        for tx in transactions
+        if tx.currency is not None and tx.currency.strip()
+    }
+    if account.currency is not None and account.currency.strip():
         currencies.add(account.currency)
     currencies.update(
         currency
@@ -172,7 +238,7 @@ def _currency_check(
             statement.opening_balance_currency,
             statement.closing_balance_currency,
         )
-        if currency is not None
+        if currency is not None and currency.strip()
     )
     if not currencies:
         return ValidationCheck(

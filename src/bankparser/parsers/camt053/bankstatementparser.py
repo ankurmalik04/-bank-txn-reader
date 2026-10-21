@@ -75,6 +75,7 @@ class BankStatementParserCamt053Adapter:
                 code="TRANSACTION_COUNT_MISMATCH",
                 location="Stmt/Ntry",
             )
+        _verify_alignment(source_transactions, transaction_records)
 
         if len(summaries) != 1:
             raise ParseError(
@@ -136,8 +137,12 @@ class BankStatementParserCamt053Adapter:
             statement=Statement(
                 id=statement_id,
                 sequence=sequence,
-                start_date=_balance_date(balance_records, "OPBD"),
-                end_date=_balance_date(balance_records, "CLBD"),
+                start_date=_statement_date(
+                    statement_node, "FrDtTm", balance_records, "OPBD"
+                ),
+                end_date=_statement_date(
+                    statement_node, "ToDtTm", balance_records, "CLBD"
+                ),
                 opening_balance=opening,
                 closing_balance=closing,
                 opening_balance_currency=_balance_currency(statement_node, "OPBD"),
@@ -174,7 +179,7 @@ def _map_transaction(
             "creditor": creditor,
             "end_to_end_id": end_to_end_id,
             "account_servicer_reference": _text(record.get("AcctSvcrRef")),
-            **source,
+            **{key: value for key, value in source.items() if key != "_alignment"},
         }.items()
         if value is not None
     }
@@ -193,7 +198,7 @@ def _map_transaction(
             iban=source.get("debtor_iban" if amount > 0 else "creditor_iban"),
         ),
         reference=reference,
-        transaction_id=None,
+        transaction_id=_meaningful_reference(source.get("transaction_id")),
         raw=raw,
     )
 
@@ -228,6 +233,7 @@ def _source_transactions(statement: Any) -> list[dict[str, Any]]:
             )
             structured_refs = detail.findall("./RmtInf/Strd//Ref")
             record = {
+                "transaction_id": _element_text(detail, "./Refs/TxId"),
                 "description": "\n".join(
                     node.text.strip()
                     for node in narrative
@@ -249,6 +255,9 @@ def _source_transactions(statement: Any) -> list[dict[str, Any]]:
                 }
                 or None,
             }
+            record["_alignment"] = _source_alignment(
+                statement, entry, detail, batched=len(details) > 1
+            )
             for role, tag in (("debtor", "Dbtr"), ("creditor", "Cdtr")):
                 record[role] = _first_not_none(
                     _element_text(detail, f"./RltdPties/{tag}/Pty/Nm"),
@@ -275,6 +284,91 @@ def _source_transactions(statement: Any) -> list[dict[str, Any]]:
     return records
 
 
+def _source_alignment(
+    statement: Any, entry: Any, detail: Any, *, batched: bool
+) -> dict[str, Any]:
+    amount_node = entry.find("Amt")
+    if amount_node is None:
+        raise ParseError(
+            "CAMT entry lacks a booked amount",
+            code="TRANSACTION_ALIGNMENT_MISMATCH",
+            location="Stmt/Ntry/Amt",
+        )
+    currency = _currency(amount_node.get("Ccy")) or _currency(
+        _element_text(statement, "./Acct/Ccy")
+    )
+    amount = _required_decimal(amount_node.text)
+    if batched:
+        candidates = {
+            _required_decimal(node.text)
+            for path in ("./Amt", "./AmtDtls/TxAmt/Amt", "./AmtDtls/CntrValAmt/Amt")
+            if (node := detail.find(path)) is not None
+            and (_currency(node.get("Ccy")) or currency) == currency
+        }
+        if len(candidates) != 1:
+            raise ParseError(
+                "Cannot identify a unique booked detail amount",
+                code="TRANSACTION_ALIGNMENT_MISMATCH",
+                location="Stmt/Ntry/NtryDtls/TxDtls",
+            )
+        amount = next(iter(candidates))
+    direction = _element_text(detail, "./CdtDbtInd") or _element_text(
+        entry, "./CdtDbtInd"
+    )
+    if direction == "DBIT":
+        amount = amount.copy_negate()
+    record: dict[str, Any] = {
+        "Amount": amount,
+        "Currency": currency,
+        "DrCr": direction,
+        "AccountId": _element_text(statement, "./Acct/Id/IBAN")
+        or _element_text(statement, "./Acct/Id/Othr/Id"),
+        "EndToEndId": _element_text(detail, "./Refs/EndToEndId"),
+        "AcctSvcrRef": _element_text(detail, "./Refs/AcctSvcrRef")
+        or _element_text(detail, "./AcctSvcrRef"),
+    }
+    for key, tag in (("BookgDt", "BookgDt"), ("ValDt", "ValDt")):
+        record[key] = (
+            _element_text(detail, f"./{tag}/Dt")
+            or _element_text(detail, f"./{tag}/DtTm")
+            or _element_text(entry, f"./{tag}/Dt")
+            or _element_text(entry, f"./{tag}/DtTm")
+        )
+    return record
+
+
+def _alignment_key(record: Mapping[str, Any]) -> tuple[Any, ...]:
+    return (
+        _required_decimal(record.get("Amount")),
+        _currency(record.get("Currency")),
+        _text(record.get("DrCr")),
+        _text(record.get("AccountId")),
+        _optional_date(record.get("BookgDt")),
+        _optional_date(record.get("ValDt")),
+        _meaningful_reference(record.get("EndToEndId")),
+        _meaningful_reference(record.get("AcctSvcrRef")),
+    )
+
+
+def _verify_alignment(
+    sources: list[dict[str, Any]], records: list[dict[str, Any]]
+) -> None:
+    source_keys = [_alignment_key(source["_alignment"]) for source in sources]
+    if len(set(source_keys)) != len(source_keys):
+        raise ParseError(
+            "CAMT source records lack distinguishable identities for enrichment",
+            code="AMBIGUOUS_TRANSACTION_ALIGNMENT",
+            location="Stmt/Ntry",
+        )
+    for index, (expected, record) in enumerate(zip(source_keys, records), start=1):
+        if expected != _alignment_key(record):
+            raise ParseError(
+                "CAMT backend identity, financial fields or order differ from source",
+                code="TRANSACTION_ALIGNMENT_MISMATCH",
+                location=sources[index - 1]["source_path"],
+            )
+
+
 def _balance_currency(statement: Any, code: str) -> str | None:
     matches = [
         balance
@@ -297,6 +391,25 @@ def _element_text(element: Any, path: str) -> str | None:
     if element is None or not hasattr(element, "findtext"):
         return None
     return _text(element.findtext(path))
+
+
+def _statement_date(
+    statement: Any, bound: str, records: list[dict[str, Any]], balance_code: str
+) -> date | None:
+    nodes = statement.findall(f"./FrToDt/{bound}")
+    if not nodes:
+        return _balance_date(records, balance_code)
+    value = _text(nodes[0].text)
+    try:
+        if len(nodes) != 1 or value is None or "T" not in value:
+            raise ValueError("Expected one ISO datetime")
+        return datetime.fromisoformat(value.replace("Z", "+00:00")).date()
+    except ValueError as exc:
+        raise ParseError(
+            "Invalid explicit CAMT reporting-period bound",
+            code="INVALID_STATEMENT_DATE",
+            location=f"Stmt/FrToDt/{bound}",
+        ) from exc
 
 
 def _balance_date(records: list[dict[str, Any]], code: str) -> date | None:
