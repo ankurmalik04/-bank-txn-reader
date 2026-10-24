@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- CAMT descriptions now fall back from unstructured remittance to AddtlTxInf,
+  then AddtlNtryInf. An entry-level AcctSvcrRef is retained in raw metadata and
+  used when existing canonical reference candidates are absent; EndToEndId and
+  backend narrative precedence are unchanged.
+- CAMT counterparty names, account IDs and IBANs now use one party role. When
+  the usual role is absent on a return, all available fields come from the
+  remaining role. An unnamed account never borrows the other party's name;
+  zero movements use their reported credit/debit direction.
+
 ## 0.5.0a2 — 21 October 2026
 
 - CAMT enrichment now verifies ordered source/backend keys comprising booked

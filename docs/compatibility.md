@@ -1,10 +1,41 @@
 # Compatibility and conformance
 
-This describes BankParser 0.5.0a2, schema 1.1. Coverage is established by synthetic
+This describes released BankParser 0.5.0a2, schema 1.1, with unreleased checkout
+changes called out below. Coverage is established by synthetic
 fixtures and regression tests. It does not certify a bank, every version of a
 format, or every document an upstream parser accepts.
 
 The next evidence milestone follows the [bank/exporter sample conformance plan](conformance-plan.md): 3–5 permitted profiles with independently reviewed expectations and held-out samples. These profiles are planned, not established support.
+
+## Bank-published demo checks — 24 October 2026
+
+Source-based checks now cover 51 transactions in seven statements from three
+official CAMT.053.001.02 demos, using 0.5.0a2 and bankstatementparser 0.0.20.
+Every canonical account, statement and transaction field was compared, including
+nulls, order and counts. All booked amounts, signs, currencies, booking/value
+dates, account scopes and balances agree. All seven statements reconcile.
+
+| Exact demo profile | Observed result | Limits on use |
+| --- | --- | --- |
+| Goldman Sachs UETR demo, July 2024; USD/HUF; IBAN; explicit reporting period | Five transactions and two empty statements; all 83 scalar canonical fields match. | Original multi-statement document is rejected; tested statements were split and serialized. Input was previously reconstructed from the bank's webpage. Foreign/instructed amounts and extension fields are outside this comparison. |
+| Handelsbanken Swedish account-statement example, December 2012; SEK/NOK; BBAN; balance-date period | Five transactions and one empty statement; counts and financial fields agree; seven narrative/reference differences. | Original multi-statement document is rejected. `AddtlNtryInf` is not mapped to description; entry-level `AcctSvcrRef` is not used as the canonical reference fallback. |
+| Rabobank SWIFT FileAct 2024 archive, CAMT.053 example dated 14 January 2019; EUR; IBAN; balance-date period | Original single-statement file parses all 41 transactions; 37 differences against source-identity expectations. | Nineteen reference differences follow documented backend narrative precedence; six reflect absent entry-reference fallback. Six returns have a counterparty name but omit that party's account ID/IBAN (12 fields). Do not rely on complete counterparty identities for these returns. |
+
+These are bank-published **demonstrations**, not authenticated production exports.
+Expectations were frozen before this comparison and are independent of parser
+output, but have no independent second-review sign-off. There are no held-out
+exports. Thus no bank profile is yet certified under the conformance plan.
+Successful validation alone does not establish full field extraction. Existing
+format conventions below remain the supported runtime contract; the table records
+observed compatibility and exclusions, not a new bank-wide guarantee.
+
+**Unreleased fixes, checked against the same frozen expectations:** all five
+Handelsbanken descriptions, eight entry-reference fallbacks and twelve Rabobank
+return-account fields now match. GS and Handelsbanken have no canonical field
+differences. Rabobank retains nineteen reference-policy differences because
+the documented backend narrative precedence is unchanged. All 51 transactions
+still match booked amounts, dates, currencies and order; all seven statements
+reconcile. This does not add independent reviewer sign-off or held-out coverage.
 
 ## Install and scope
 
@@ -111,6 +142,16 @@ references and structured remittance references remain in raw metadata. Only the
 documented namespace/version has corpus coverage; this is not full ISO 20022/XSD
 validation. Multi-detail conservation remains an upstream check and has no
 independent batch fixture in this release.
+
+In the **unreleased checkout**, absent/blank unstructured remittance falls back
+to detail AddtlTxInf, then entry AddtlNtryInf. Entry-level AcctSvcrRef is retained
+in raw metadata and becomes the final canonical reference fallback, after the
+existing candidates above. Counterparty fields use one debtor/creditor role:
+prefer debtor on a credit and creditor on a debit, falling back to the other
+role only when the preferred role has no name or account identifiers. Names and
+accounts are never assembled from different roles. Zero amounts use CdtDbtInd
+to select the preferred role. On returns, role labels can describe the original
+payment; these fields are not a new interpretation of the direction of money.
 
 In 0.5.0a2, reporting-period bounds prefer explicit FrToDt/FrDtTm
 and ToDtTm, preserving source-local dates; each absent bound falls back to the
