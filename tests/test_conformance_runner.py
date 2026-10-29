@@ -548,12 +548,12 @@ def test_output_symlink_cannot_replace_frozen_expectation(sample, tmp_path, caps
 def test_published_schemas_and_examples_are_in_export_allowlist():
     selected = runpy.run_path("scripts/export_publication.py")["selected"]
     for path in Path("docs/schemas").glob("conformance-*.schema.json"):
-        assert selected(str(path))
+        assert selected(path.as_posix())
         assert json.loads(path.read_text())["$schema"].endswith("2020-12/schema")
     assert selected("scripts/check_conformance.py")
     assert selected("docs/conformance.md")
     for path in Path("examples/conformance").glob("*.json"):
-        assert selected(str(path))
+        assert selected(path.as_posix())
     assert not selected("docs/reviews/2026-10-24-bank-sample-results.json")
 
 
