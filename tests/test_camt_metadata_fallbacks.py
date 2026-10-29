@@ -8,6 +8,7 @@ from xml.etree import ElementTree as ET
 import pytest
 
 from bankparser import parse
+from bankparser.parsers.camt053.bankstatementparser import _map_transaction
 from bankparser.serialization import to_primitive
 
 pytestmark = pytest.mark.skipif(
@@ -286,3 +287,55 @@ def test_unavailable_end_to_end_id_allows_entry_reference_fallback(e2e):
         result.transactions[0].raw["account_servicer_reference"] == "SYNTH-ENTRY-ONLY"
     )
     assert_financial_fields_unchanged(result)
+
+
+@pytest.mark.parametrize("reference", [None, "", " \t ", "NOTPROVIDED", " notprovided "])
+@pytest.mark.parametrize("e2e", [None, "SYNTH-E2E"])
+def test_unavailable_entry_reference_is_not_canonical(reference, e2e):
+    root, entry, detail = case()
+    remove(detail, "RmtInf")
+    remove(detail, "Refs")
+    if e2e is not None:
+        add(ET.SubElement(detail, NS + "Refs"), "EndToEndId", e2e)
+    if reference is not None:
+        add(entry, "AcctSvcrRef", reference)
+    result = parse(ET.tostring(root))
+    transaction = result.transactions[0]
+    assert transaction.reference == e2e
+    assert "account_servicer_reference" not in transaction.raw
+    assert_financial_fields_unchanged(result)
+
+
+@pytest.mark.parametrize("reference", ["", " \t ", "NOTPROVIDED", " notprovided "])
+@pytest.mark.parametrize("location", ["refs", "detail"])
+def test_unavailable_detail_reference_allows_valid_entry_reference(reference, location):
+    root, entry, detail = case()
+    remove(detail, "RmtInf")
+    remove(detail, "Refs")
+    parent = ET.SubElement(detail, NS + "Refs") if location == "refs" else detail
+    add(parent, "AcctSvcrRef", reference)
+    add(entry, "AcctSvcrRef", "SYNTH-ENTRY")
+    result = parse(ET.tostring(root))
+    transaction = result.transactions[0]
+    assert transaction.reference == "SYNTH-ENTRY"
+    assert transaction.raw["account_servicer_reference"] == "SYNTH-ENTRY"
+    assert_financial_fields_unchanged(result)
+
+
+@pytest.mark.parametrize("reference", [None, "", " \t ", "NOTPROVIDED", " notprovided "])
+@pytest.mark.parametrize("other_reference", [None, "SYNTH-VALID"])
+@pytest.mark.parametrize("unavailable_location", ["backend", "source"])
+def test_mapper_normalizes_both_account_servicer_reference_inputs(
+    reference, other_reference, unavailable_location
+):
+    backend, source = (
+        (reference, other_reference)
+        if unavailable_location == "backend"
+        else (other_reference, reference)
+    )
+    transaction = _map_transaction(
+        {"Amount": "1.00", "AcctSvcrRef": backend},
+        statement_currency="GBP",
+        source={"account_servicer_reference": source},
+    )
+    assert transaction.reference == other_reference
