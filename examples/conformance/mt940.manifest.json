@@ -1,0 +1,39 @@
+{
+  "manifest_schema_version": "1",
+  "profile": {
+    "id": "synthetic-mt940",
+    "version": "1",
+    "exporter": "independently invented BankParser corpus",
+    "format": "mt940",
+    "format_version": "synthetic final-balance MT940 v1",
+    "implementation": "wolph",
+    "csv_options": null,
+    "settings": {
+      "encoding": "UTF-8",
+      "account_type": "synthetic bank account",
+      "currency": "GBP",
+      "locale": "synthetic ISO dates",
+      "date_convention": "booking/value meanings in corpus PROVENANCE.md",
+      "amount_convention": "exact signed account-booked amounts; format source conventions apply"
+    }
+  },
+  "samples": [
+    {
+      "id": "basic-valid-mt940",
+      "source": "../../corpus/mt940/basic_valid.mt940",
+      "source_sha256": "6b2458b4a489992fba34e6bcf920c45ce466772019f983aab2fb3e70cceafc5a",
+      "expected": "mt940.expected.json",
+      "expected_sha256": "9100e861bf699f55bb8f99cff8fb67efbda24f412c044e5c1463523fa1cb9d16",
+      "evidence": {
+        "kind": "synthetic",
+        "cohort": "development",
+        "permission": "independently invented; repository MIT license",
+        "expectation_author": "independent synthetic corpus authors",
+        "expectation_method": "Copied account/statement/transactions from the existing independently authored corpus golden, without invoking BankParser; see corpus/PROVENANCE.md",
+        "independent_reviewer": null,
+        "held_out_untouched": false
+      },
+      "policy_differences": []
+    }
+  ]
+}

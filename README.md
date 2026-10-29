@@ -313,6 +313,20 @@ still compare equal; comparison is not an import-readiness check.
 `implementations(format)` lists configured names, even when an optional
 dependency is absent.
 
+## Sample conformance
+
+Compare parser output with independently reviewed, frozen expectations:
+
+```bash
+PYTHONPATH=src python scripts/check_conformance.py examples/conformance/native-csv.manifest.json --json /tmp/conformance.json --markdown /tmp/conformance.md
+```
+
+The source-distribution runner checks file hashes, ordered canonical fields,
+counts and per-currency totals, and records policy differences and skipped
+production/review/held-out evidence. It neither authors expected answers nor
+certifies bank profiles. Reports contain financial data. See the
+[conformance guide](docs/conformance.md) for schemas, private intake and exits.
+
 ## Development
 
 ```bash

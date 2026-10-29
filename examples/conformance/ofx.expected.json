@@ -1,0 +1,49 @@
+{
+  "expectation_schema_version": "1",
+  "canonical_schema_version": "1.1",
+  "account": {
+    "id": "GB75TEST00000000000001",
+    "iban": null,
+    "currency": "GBP"
+  },
+  "statement": {
+    "id": null,
+    "sequence": null,
+    "start_date": "2026-09-14",
+    "end_date": "2026-09-16",
+    "opening_balance": null,
+    "closing_balance": "561.25",
+    "opening_balance_currency": null,
+    "closing_balance_currency": "GBP"
+  },
+  "transactions": [
+    {
+      "booking_date": "2026-09-15",
+      "value_date": null,
+      "amount": "-18.75",
+      "currency": "GBP",
+      "description": "Test materials",
+      "reference": null,
+      "transaction_id": "SYNTH-OFX-1",
+      "counterparty": {
+        "name": null,
+        "account_id": null,
+        "iban": null
+      }
+    },
+    {
+      "booking_date": "2026-09-16",
+      "value_date": null,
+      "amount": "80.00",
+      "currency": "GBP",
+      "description": "Test contribution",
+      "reference": null,
+      "transaction_id": "SYNTH-OFX-2",
+      "counterparty": {
+        "name": null,
+        "account_id": null,
+        "iban": null
+      }
+    }
+  ]
+}

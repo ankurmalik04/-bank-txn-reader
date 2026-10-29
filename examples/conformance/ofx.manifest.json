@@ -1,0 +1,39 @@
+{
+  "manifest_schema_version": "1",
+  "profile": {
+    "id": "synthetic-ofx",
+    "version": "1",
+    "exporter": "independently invented BankParser corpus",
+    "format": "ofx",
+    "format_version": "OFX 2.2",
+    "implementation": "ofxparse",
+    "csv_options": null,
+    "settings": {
+      "encoding": "UTF-8",
+      "account_type": "synthetic bank account",
+      "currency": "GBP",
+      "locale": "synthetic ISO dates",
+      "date_convention": "booking/value meanings in corpus PROVENANCE.md",
+      "amount_convention": "exact signed account-booked amounts; format source conventions apply"
+    }
+  },
+  "samples": [
+    {
+      "id": "basic-valid-ofx",
+      "source": "../../corpus/ofx/basic_valid.ofx",
+      "source_sha256": "f80b7d7bb7829861f653d212fa394323cad64e2a7858ab5201bba3b03e08c4b9",
+      "expected": "ofx.expected.json",
+      "expected_sha256": "c9168533f7d52f529137efa96a717b787d5e29fe629a5d450fcf2404bd72c447",
+      "evidence": {
+        "kind": "synthetic",
+        "cohort": "development",
+        "permission": "independently invented; repository MIT license",
+        "expectation_author": "independent synthetic corpus authors",
+        "expectation_method": "Copied account/statement/transactions from the existing independently authored corpus golden, without invoking BankParser; see corpus/PROVENANCE.md",
+        "independent_reviewer": null,
+        "held_out_untouched": false
+      },
+      "policy_differences": []
+    }
+  ]
+}

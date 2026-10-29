@@ -83,6 +83,14 @@ claiming held-out success.
 - Compatibility documentation updated only for demonstrated profile boundaries.
   Evidence includes synthetic regression cases where allowed and useful.
 
+## Tooling available, 28 October 2026
+
+The reusable v1 runner, strict schemas and synthetic examples are implemented;
+see [the conformance guide](conformance.md). The older CAMT demo expectations,
+source hashes and reports remain unchanged. Tooling completion does not supply
+production exports, independent second review or untouched held-out samples.
+Those evidence prerequisites remain incomplete.
+
 ## Next actions
 
 1. Maintainer identifies prospective users and selects the first two exporters.

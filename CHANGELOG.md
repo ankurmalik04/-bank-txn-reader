@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Added source-distribution conformance tooling with version-1 manifest,
+  independently frozen expectation and report schemas, plus CSV/MT940/CAMT/OFX
+  synthetic examples copied from existing independent corpus goldens. The runner
+  checks exact hashes, ordered canonical fields, counts, signed totals by currency
+  and available balance conservation; metadata policy exceptions remain visible.
+  JSON/Markdown reports separate deterministic facts from execution metadata and
+  explicitly label missing production/second-review/held-out evidence. It does not
+  generate oracles, certify profiles or change parsing APIs/schema/dependencies.
+
 - CLI comparison adds opt-in --fail-on-diff: a completed mismatch exits 4 while
   preserving the full JSON report on stdout. The default still exits 0 for any
   completed comparison; a match exits 0 with either setting. Comparison errors
