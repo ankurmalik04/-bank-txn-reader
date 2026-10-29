@@ -31,6 +31,8 @@ ROOT_FILES = {
     "THIRD_PARTY_NOTICES.md",
 }
 DOCS = {
+    "docs/csv-onboarding.md",
+    "docs/profile-evidence.md",
     "docs/conformance-plan.md",
     "docs/api.md",
     "docs/compatibility.md",

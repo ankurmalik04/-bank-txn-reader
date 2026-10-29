@@ -10,6 +10,10 @@ from email.parser import BytesParser
 from pathlib import Path, PurePosixPath
 
 POLICIES = {
+    "docs/csv-onboarding.md",
+    "docs/profile-evidence.md",
+    "docs/conformance-plan.md",
+    "examples/csv_onboarding.py",
     ".gitattributes",
     "LICENSE",
     "README.md",
