@@ -10,6 +10,7 @@ from typing import Any
 
 from bankparser.api import implementations, parse
 from bankparser.comparison import compare
+from bankparser.diagnostics import diagnostic_for_error, diagnostics_for
 from bankparser.errors import BankParserError, InputError
 from bankparser.options import CsvOptions
 from bankparser.profiles import load_csv_profile
@@ -38,6 +39,11 @@ def build_parser() -> argparse.ArgumentParser:
     _add_csv_options(parse_parser)
     parse_parser.add_argument(
         "--json-errors", action="store_true", help="emit structured errors on stderr"
+    )
+    parse_parser.add_argument(
+        "--include-diagnostics",
+        action="store_true",
+        help="include structured non-passing checks and warnings in output",
     )
     _add_output_policy(parse_parser)
 
@@ -238,13 +244,12 @@ def main(argv: Sequence[str] | None = None) -> int:
                 )
             )
             return {"ready": 0, "review": 5, "not-ready": 6}[assessment.status]
-        print(
-            json.dumps(
-                to_primitive(result, policy=args.output_policy),
-                indent=2,
-                sort_keys=True,
+        output = to_primitive(result, policy=args.output_policy)
+        if getattr(args, "include_diagnostics", False):
+            output["diagnostics"] = to_primitive(
+                diagnostics_for(result), policy=args.output_policy
             )
-        )
+        print(json.dumps(output, indent=2, sort_keys=True))
         if result.validation.status == "failed" or (
             args.strict_validation and result.validation.status != "passed"
         ):
@@ -257,6 +262,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             else:
                 print(f"bankparser: {exc.code}", file=sys.stderr)
         elif getattr(args, "json_errors", False):
+            diagnostic = diagnostic_for_error(exc)
             print(
                 json.dumps(
                     {
@@ -264,7 +270,10 @@ def main(argv: Sequence[str] | None = None) -> int:
                             "code": exc.code,
                             "message": str(exc),
                             "location": exc.location,
-                        }
+                            "diagnostic": to_primitive(
+                                diagnostic, policy=args.output_policy
+                            ),
+                        },
                     }
                 ),
                 file=sys.stderr,

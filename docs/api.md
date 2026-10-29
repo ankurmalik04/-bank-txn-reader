@@ -260,6 +260,26 @@ returned. Parse validation exit 3 and Python `compare` behavior are unchanged.
 Matching output can include identical failed/skipped validation checks; this
 flag checks agreement, not import readiness or independent correctness.
 
+## Structured diagnostics
+
+`bankparser.diagnostics_for(parse_result)` returns `Diagnostic` objects for
+warnings and non-passing validation checks. `diagnostic_for_error(error)` maps a
+`BankParserError` to the same model. Diagnostics retain machine-readable codes
+and severities, format, canonical field, optional corrective guidance, and
+source context. Transaction `record_indices` are zero-based; a validation
+diagnostic may carry multiple indices and aligned `source_locations` because
+the existing checks aggregate repeated issues. The legacy `location` and
+validation message fields remain unchanged. Expected/actual values can contain
+financial data under full serialization.
+
+The parse CLI accepts `--include-diagnostics` to add structured warnings and
+non-passing checks to its output. Structured errors are included under the
+existing `error` object when `--json-errors` is enabled. The existing
+`to_primitive` output shape remains unchanged when diagnostics are not requested;
+diagnostic-only validation metadata is available through `diagnostics_for`.
+`redacted-diagnostic` output omits messages, values, indices and source locations,
+while retaining allowlisted code, severity, format and canonical field.
+
 Use `bankparser.serialization.to_primitive(value)` before JSON serialization.
 Amounts become strings, dates become ISO strings, and tuples become lists.
 The optional `policy` keyword selects `full` (the unchanged default), `canonical`
@@ -267,6 +287,7 @@ The optional `policy` keyword selects `full` (the unchanged default), `canonical
 `redacted-diagnostic`. The redacted diagnostic is a strict summary allowlist:
 format, validation status/check codes, warning codes, transaction count,
 comparison match/difference counts, and readiness status/reason codes/counts.
+For `Diagnostic` values it also retains severity and the canonical field name.
 It omits free text, amounts, dates, IDs, names, references, paths, raw values,
 expected/actual values and fingerprints. `canonical` output can still contain
 sensitive financial and identity data. Redacted diagnostics reduce exposure but

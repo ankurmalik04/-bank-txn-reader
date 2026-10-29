@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bankparser.example/schemas/diagnostic-v1.schema.json",
+  "title": "BankParser structured diagnostic",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "diagnostic_schema_version": {"const": "1"},
+    "code": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]{0,63}$"},
+    "severity": {"enum": ["info", "warning", "error"]},
+    "message": {"type": "string"},
+    "format": {"enum": ["csv", "mt940", "camt053", "ofx", null]},
+    "record_indices": {
+      "type": "array",
+      "items": {"type": "integer", "minimum": 0},
+      "uniqueItems": true
+    },
+    "source_locations": {
+      "type": "array",
+      "items": {"type": ["string", "null"]}
+    },
+    "canonical_field": {"type": ["string", "null"]},
+    "guidance": {"type": ["string", "null"]},
+    "expected": {"type": ["string", "null"]},
+    "actual": {"type": ["string", "null"]}
+  },
+  "required": [
+    "diagnostic_schema_version",
+    "code",
+    "severity",
+    "message",
+    "format",
+    "record_indices",
+    "source_locations",
+    "canonical_field",
+    "guidance",
+    "expected",
+    "actual"
+  ]
+}

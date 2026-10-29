@@ -8,7 +8,7 @@ from os import PathLike
 from pathlib import Path
 
 from bankparser.detection import detect_format
-from bankparser.errors import InputError, UnsupportedFormatError
+from bankparser.errors import BankParserError, InputError, UnsupportedFormatError
 from bankparser.models import ParseResult, SourceMetadata, Warning
 from bankparser.options import CsvOptions
 from bankparser.parsers.base import ParseContext
@@ -41,19 +41,31 @@ def parse(
     data, file_name = _load_input(source)
     csv_options = _csv_configuration(csv_options, csv_profile)
     format = _input_format(data, csv_options=csv_options, format=format)
-    adapter = select_parser(
-        _default_registry(), format=format, implementation=implementation
-    )
+    try:
+        adapter = select_parser(
+            _default_registry(), format=format, implementation=implementation
+        )
+    except BankParserError as exc:
+        if exc.format is None:
+            exc.format = format
+        raise
     # Backends perform signed Decimal arithmetic. Isolate it from callers'
     # precision, exponent limits and traps; input length bounds literal digits
     # and provides room for carries when the backend totals source movements.
     with localcontext(Context(prec=max(28, len(data)), Emin=MIN_EMIN, Emax=MAX_EMAX)):
-        canonical = adapter.parse(
-            data,
-            ParseContext(
-                file_name=file_name, csv_options=csv_options, csv_profile=csv_profile
-            ),
-        )
+        try:
+            canonical = adapter.parse(
+                data,
+                ParseContext(
+                    file_name=file_name,
+                    csv_options=csv_options,
+                    csv_profile=csv_profile,
+                ),
+            )
+        except BankParserError as exc:
+            if exc.format is None:
+                exc.format = format
+            raise
     validation = validate(
         canonical.account, canonical.statement, canonical.transactions
     )

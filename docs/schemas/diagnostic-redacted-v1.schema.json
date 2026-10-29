@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bankparser.example/schemas/diagnostic-redacted-v1.schema.json",
+  "title": "BankParser redacted structured diagnostic",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "diagnostic_schema_version": {"const": "1"},
+    "code": {"type": ["string", "null"], "pattern": "^[A-Z][A-Z0-9_]{0,63}$"},
+    "severity": {"enum": ["info", "warning", "error", null]},
+    "format": {"enum": ["csv", "mt940", "camt053", "ofx", null]},
+    "canonical_field": {
+      "type": ["string", "null"],
+      "pattern": "^[a-z][a-z0-9_.]*$"
+    }
+  },
+  "required": [
+    "diagnostic_schema_version",
+    "code",
+    "severity",
+    "format",
+    "canonical_field"
+  ]
+}

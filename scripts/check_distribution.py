@@ -39,6 +39,8 @@ POLICIES = {
     "docs/schemas/conformance-manifest-v1.schema.json",
     "docs/schemas/conformance-expectation-v1.schema.json",
     "docs/schemas/conformance-report-v1.schema.json",
+    "docs/schemas/diagnostic-v1.schema.json",
+    "docs/schemas/diagnostic-redacted-v1.schema.json",
     "examples/conformance/native-csv.manifest.json",
     "examples/conformance/native-csv.expected.json",
     "tests/ofx_cases.py",

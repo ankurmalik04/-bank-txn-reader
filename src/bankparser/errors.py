@@ -21,11 +21,27 @@ class BankParserError(Exception):
     code = "BANKPARSER_ERROR"
 
     def __init__(
-        self, message: str, *, code: str | None = None, location: str | None = None
+        self,
+        message: str,
+        *,
+        code: str | None = None,
+        location: str | None = None,
+        format: str | None = None,
+        record_index: int | None = None,
+        canonical_field: str | None = None,
+        guidance: str | None = None,
     ) -> None:
         super().__init__(message)
         self.code = code or type(self).code
         self.location = location
+        self.format = format
+        self.record_index = record_index
+        self.canonical_field = canonical_field
+        self.guidance = guidance
+
+    @property
+    def severity(self) -> str:
+        return "error"
 
 
 class InputError(BankParserError):
