@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- CAMT now accepts repeated financial alignment keys only when every source
+  enrichment field is semantically identical across the repeated records and
+  the backend fields used as enrichment fallbacks also agree. Source provenance
+  paths remain distinct in raw output. Conflicting descriptions, references,
+  counterparties or backend fallback metadata still raise
+  AMBIGUOUS_TRANSACTION_ALIGNMENT; changed or reordered financial keys still
+  raise TRANSACTION_ALIGNMENT_MISMATCH. No records are deduplicated or matched
+  by guessed position.
 - Added separate ImportPolicy/assess_import readiness reports with ready, review
   and not-ready outcomes, structured reasons and a data-only v1 policy loader.
   Destination requirements cover dates, currency, identity, text and balances;
