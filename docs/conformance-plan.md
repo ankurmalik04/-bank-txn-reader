@@ -1,7 +1,10 @@
 # Bank/exporter sample conformance plan
 
-Saved 21 October 2026. Status: planned; no real samples collected or reviewed
-under this plan yet. Maintainer: ankurmalik04. The first alpha is published;
+Saved 21 October 2026; evidence status updated 24 October 2026. Status: incomplete;
+three official bank demos have source-based comparisons covering 51 transactions,
+but no production-export cohort, independent second review or held-out samples.
+See the bounded results and exclusions in [compatibility.md](compatibility.md).
+Maintainer: ankurmalik04. The first alpha is published;
 private security reporting and notifications are complete per maintainer confirmation.
 
 ## Goal and first cohort
