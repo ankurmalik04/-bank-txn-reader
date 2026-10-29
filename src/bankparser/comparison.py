@@ -8,12 +8,12 @@ from decimal import Decimal, InvalidOperation, localcontext
 from os import PathLike
 from typing import Any
 
-from bankparser.api import _load_input, parse
+from bankparser.api import _csv_configuration, _input_format, _load_input, parse
 from bankparser.api import implementations as available_implementations
-from bankparser.detection import detect_format
 from bankparser.errors import ComparisonError
 from bankparser.models import ParseResult
 from bankparser.options import CsvOptions
+from bankparser.profiles import CsvProfile
 from bankparser.serialization import to_primitive
 
 _MISSING = object()
@@ -48,6 +48,8 @@ def compare(
     *,
     implementations: Sequence[str] | None = None,
     csv_options: CsvOptions | None = None,
+    csv_profile: CsvProfile | None = None,
+    format: str | None = None,
 ) -> ComparisonReport:
     """Run parser implementations and compare their canonical output.
 
@@ -58,7 +60,8 @@ def compare(
     """
     # Compare a single snapshot even if a path is replaced while backends run.
     data, _ = _load_input(source)
-    format_name = detect_format(data)
+    resolved_options = _csv_configuration(csv_options, csv_profile)
+    format_name = _input_format(data, csv_options=resolved_options, format=format)
     selected = tuple(
         dict.fromkeys(
             available_implementations(format_name)
@@ -72,7 +75,11 @@ def compare(
     results: dict[str, ParseResult] = {}
     for implementation in selected:
         results[implementation] = parse(
-            data, implementation=implementation, csv_options=csv_options
+            data,
+            implementation=implementation,
+            csv_options=csv_options,
+            csv_profile=csv_profile,
+            format=format,
         )
 
     return compare_results(results)

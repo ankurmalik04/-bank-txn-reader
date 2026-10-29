@@ -1,0 +1,19 @@
+{
+  "profile_schema_version": "1",
+  "id": "synthetic-mapped-signed",
+  "version": "1",
+  "format": "csv",
+  "options": {
+    "columns": {
+      "Posting": "booking_date",
+      "Settlement": "value_date",
+      "Text": "description",
+      "Net": "amount",
+      "Unit": "currency",
+      "Wallet": "account_id",
+      "Key": "transaction_id",
+      "Ref": "reference"
+    },
+    "expected_currency": "GBP"
+  }
+}

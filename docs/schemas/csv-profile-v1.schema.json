@@ -1,0 +1,185 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BankParser data-only CSV parsing profile v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "profile_schema_version",
+    "id",
+    "version",
+    "format",
+    "options"
+  ],
+  "properties": {
+    "profile_schema_version": {
+      "const": "1"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "\\S"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "\\S"
+    },
+    "format": {
+      "const": "csv"
+    },
+    "options": {
+      "$ref": "#/$defs/options"
+    }
+  },
+  "$defs": {
+    "options": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "decimal_separator": {
+          "enum": [
+            null,
+            ".",
+            ","
+          ]
+        },
+        "grouping_separator": {
+          "enum": [
+            null,
+            ".",
+            ",",
+            " ",
+            "'"
+          ]
+        },
+        "date_format": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "\\S"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "columns": {
+          "anyOf": [
+            {
+              "type": "object",
+              "minProperties": 1,
+              "propertyNames": {
+                "type": "string",
+                "pattern": "^\\S(?:[\\s\\S]*\\S)?(?![\\s\\S])"
+              },
+              "additionalProperties": {
+                "enum": [
+                  "date",
+                  "booking_date",
+                  "value_date",
+                  "description",
+                  "amount",
+                  "debit",
+                  "credit",
+                  "balance",
+                  "currency",
+                  "account_id",
+                  "iban",
+                  "transaction_id",
+                  "reference"
+                ]
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "date_role": {
+          "enum": [
+            null,
+            "booking_date",
+            "value_date"
+          ]
+        },
+        "default_currency": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z]{3}(?![\\s\\S])"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "expected_currency": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z]{3}(?![\\s\\S])"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "header_row": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "header_search_limit": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "encoding": {
+          "enum": [
+            "utf-8",
+            "utf-8-sig",
+            "cp1252",
+            "windows-1252",
+            "latin-1",
+            "iso-8859-1"
+          ]
+        },
+        "delimiter": {
+          "enum": [
+            null,
+            ",",
+            ";",
+            "\t",
+            "|"
+          ]
+        }
+      },
+      "not": {
+        "required": [
+          "header_row",
+          "header_search_limit"
+        ],
+        "properties": {
+          "header_row": {
+            "type": "integer"
+          },
+          "header_search_limit": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  }
+}

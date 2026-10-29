@@ -8,11 +8,12 @@ from decimal import Decimal
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from bankparser.detection.csv import csv_header
 from bankparser.errors import ParseError, ParserDependencyError, dependency_install_hint
+from bankparser.options import CsvOptions
 from bankparser.parsers.base import CanonicalData, ParseContext
 
-from .native import NativeCsvAdapter, _columns
+from .native import NativeCsvAdapter
+from .source import read_layout
 
 
 class BankStatementParserCsvAdapter:
@@ -33,8 +34,7 @@ class BankStatementParserCsvAdapter:
         except (ImportError, AttributeError) as exc:
             raise ParserDependencyError(
                 "The 'bankstatementparser' package is required for explicit CSV "
-                "backend selection. "
-                + dependency_install_hint("alternative")
+                "backend selection. " + dependency_install_hint("alternative")
             ) from exc
 
     @property
@@ -43,36 +43,45 @@ class BankStatementParserCsvAdapter:
 
     def parse(self, data: bytes, context: ParseContext) -> CanonicalData:
         canonical = NativeCsvAdapter().parse(data, context)
-        # Native parsing has already validated the header and every source row.
-        detected = csv_header(data)
-        assert detected is not None
-        delimiter, headers = detected
-        columns = _columns(headers)
+        # Normalize only the backend count-check input, never the source raw cells.
+        layout = read_layout(data, context.csv_options or CsvOptions())
+        split = "amount" not in layout.columns
+        headers = [
+            "Booking Date",
+            "Description",
+            "Currency",
+            "Account",
+            "Reference",
+        ] + (["Debit", "Credit"] if split else ["Amount"])
         try:
             with TemporaryDirectory(prefix="bankparser-") as directory:
                 source = Path(directory) / "statement.csv"
                 with source.open("w", encoding="utf-8", newline="") as output:
-                    writer = csv.DictWriter(
-                        output, fieldnames=headers, delimiter=delimiter
-                    )
+                    writer = csv.DictWriter(output, fieldnames=headers)
                     writer.writeheader()
                     for transaction in canonical.transactions:
-                        row = dict(transaction.raw["source_fields"])
-                        if "amount" in columns:
-                            row[columns["amount"]] = str(transaction.amount)
+                        row = {
+                            "Booking Date": transaction.booking_date.isoformat()
+                            if transaction.booking_date
+                            else "",
+                            "Description": transaction.description or "",
+                            "Currency": transaction.currency or "",
+                            "Account": canonical.account.id or "",
+                            "Reference": transaction.reference or "",
+                        }
+                        if split:
+                            row["Debit"] = str(
+                                transaction.amount.copy_abs()
+                                if transaction.amount < 0
+                                else Decimal(0)
+                            )
+                            row["Credit"] = str(
+                                transaction.amount
+                                if transaction.amount > 0
+                                else Decimal(0)
+                            )
                         else:
-                            for name in ("debit", "credit"):
-                                if name in columns and row[columns[name]].strip():
-                                    active = (
-                                        name == "debit" and transaction.amount < 0
-                                    ) or (name == "credit" and transaction.amount > 0)
-                                    row[columns[name]] = str(
-                                        transaction.amount.copy_abs()
-                                        if active
-                                        else Decimal(0)
-                                    )
-                        if "balance" in columns:
-                            row[columns["balance"]] = ""
+                            row["Amount"] = str(transaction.amount)
                         writer.writerow(row)
                 records = self._parser_class(source).parse().to_dict("records")
         except Exception as exc:

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import dataclasses
+from collections.abc import Mapping
 from datetime import date
 from decimal import Decimal
 from typing import Any
@@ -23,6 +24,6 @@ def to_primitive(value: Any) -> Any:
         return [to_primitive(item) for item in value]
     if isinstance(value, list):
         return [to_primitive(item) for item in value]
-    if isinstance(value, dict):
+    if isinstance(value, Mapping):
         return {str(key): to_primitive(item) for key, item in value.items()}
     return value

@@ -33,6 +33,8 @@ ROOT_FILES = {
 DOCS = {
     "docs/conformance-plan.md",
     "docs/conformance.md",
+    "docs/csv-profiles.md",
+    "docs/schemas/csv-profile-v1.schema.json",
     "docs/schemas/conformance-manifest-v1.schema.json",
     "docs/schemas/conformance-expectation-v1.schema.json",
     "docs/schemas/conformance-report-v1.schema.json",
@@ -65,6 +67,11 @@ def selected(path):
         path in ROOT_FILES
         or path in DOCS
         or path in SCRIPTS
+        or (
+            len(value.parts) == 3
+            and value.parts[:2] == ("examples", "csv-profiles")
+            and value.suffix in {".json", ".csv"}
+        )
         or (
             len(value.parts) > 2
             and value.parts[:2] == ("docs", "audits")

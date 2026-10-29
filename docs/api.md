@@ -15,7 +15,7 @@ result = parse(
 )
 ```
 
-`parse(source, *, implementation=None, csv_options=None)` accepts a filesystem
+`parse(source, *, implementation=None, csv_options=None, csv_profile=None, format=None)` accepts a filesystem
 path (`str` or `os.PathLike`) or `bytes`. It detects format from content and
 returns `ParseResult`. Input must be non-empty and at most 5 MiB. File reads are
 bounded even if the file grows between the size check and reading.
@@ -65,15 +65,29 @@ The result has no built-in file hash, idempotency key or deduplication state.
 
 ## CSV options
 
-`CsvOptions` is a frozen dataclass with three optional fields:
+`CsvOptions` is a frozen dataclass. Its first three positional fields remain compatible:
 
 | Option | Allowed values and effect |
 | --- | --- |
 | `decimal_separator` | `"."` or `","`; `None` accepts only unambiguous ungrouped amounts. |
 | `grouping_separator` | `"."`, `","`, space or apostrophe; requires an explicit, different decimal separator. |
 | `date_format` | An explicit `datetime.strptime` format, such as `"%d/%m/%Y"`. |
+| `columns` | Exact source-header → canonical field mapping, replacing synonym matching; None keeps automatic headers. |
+| `date_role` | `booking_date` or `value_date` for generic Date; None retains ambiguous semantics. |
+| `default_currency` | Fill missing currency only, with a warning and raw provenance. |
+| `expected_currency` | Assert effective currency; missing/conflicting values are errors. |
+| `header_row`, `header_search_limit` | Exact physical header start or bounded first-N-line search; mutually exclusive. |
+| `encoding`, `delimiter` | Explicit supported encoding/delimiter; no encoding guessing. |
 
-Passing `csv_options` for another format raises `InputError`. Invalid monetary
+Pass `csv_profile=load_csv_profile(path)` instead of csv_options for a reusable
+v1 data-only convention set; the two parameters are mutually exclusive.
+Both parse and compare support the same parameters and CLI flags. format="csv"
+is a guarded override; CSV options/profile also declare otherwise-unrecognized
+CSV. Recognized non-CSV input is rejected and all CSV structural/financial checks
+remain active. See [CSV profiles](csv-profiles.md) for exact fields, physical line
+numbering, currency semantics, provenance and synthetic examples.
+
+Passing CSV configuration for another recognized format raises `InputError`. Invalid monetary
 conventions raise errors; invalid or ambiguous dates stay `None` with an
 `UNPARSED_TRANSACTION_DATE` warning. Generic Date and running Balance columns
 retain their source values without establishing more specific semantics.
@@ -136,6 +150,7 @@ library exception has `code` and nullable `location`:
 | `MULTIPLE_STATEMENTS` | Split the input into supported statement/account scopes. |
 | `AMBIGUOUS_AMOUNT` | Supply explicit decimal/grouping conventions. |
 | `INVALID_AMOUNT`, `SIGNED_DEBIT_CREDIT`, `AMBIGUOUS_MOVEMENT` | Correct the amount/sign convention or use a signed Amount column. |
+| `MISSING_CSV_COLUMN`, `INVALID_CSV_HEADER`, `AMBIGUOUS_CSV_HEADER`, `CSV_CURRENCY_CONSTRAINT` | Review explicit mappings, physical header selection and declared currency constraint. |
 | `AMBIGUOUS_COLUMNS`, `INVALID_CSV_ROW`, `INVALID_CSV` | Correct the CSV header, structure or encoding. |
 | `EMPTY_STATEMENT` | Supply a CSV containing transaction rows. |
 | `TRANSACTION_COUNT_MISMATCH` | Review the source/backend mismatch; do not import a partial result. |
@@ -155,7 +170,7 @@ wording for control flow.
 `implementations(format)` lists configured names without importing optional
 backends. It does not certify their dependencies are installed.
 
-`compare(source, *, implementations=None, csv_options=None)` reads one bounded input snapshot,
+`compare(source, *, implementations=None, csv_options=None, csv_profile=None, format=None)` reads one bounded input snapshot,
 runs the selected implementations and returns `ComparisonReport`: `format`,
 `implementations`, `matches` and `differences`. Each difference contains a field
 path, serialized `values` from each implementation, and a `present` boolean map.

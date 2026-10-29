@@ -1,0 +1,49 @@
+{
+  "expectation_schema_version": "1",
+  "canonical_schema_version": "1.1",
+  "account": {
+    "id": "ACCT-A",
+    "iban": null,
+    "currency": "GBP"
+  },
+  "statement": {
+    "id": null,
+    "sequence": null,
+    "start_date": "2026-10-01",
+    "end_date": "2026-10-02",
+    "opening_balance": null,
+    "closing_balance": null,
+    "opening_balance_currency": null,
+    "closing_balance_currency": null
+  },
+  "transactions": [
+    {
+      "booking_date": "2026-10-01",
+      "value_date": "2026-10-02",
+      "amount": "20.00",
+      "currency": "GBP",
+      "description": "Income",
+      "counterparty": {
+        "name": null,
+        "account_id": null,
+        "iban": null
+      },
+      "reference": "REF-1",
+      "transaction_id": "ID-1"
+    },
+    {
+      "booking_date": "2026-10-02",
+      "value_date": "2026-10-02",
+      "amount": "-3.50",
+      "currency": "GBP",
+      "description": "Shop",
+      "counterparty": {
+        "name": null,
+        "account_id": null,
+        "iban": null
+      },
+      "reference": "REF-2",
+      "transaction_id": "ID-2"
+    }
+  ]
+}

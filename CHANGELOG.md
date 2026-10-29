@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+- CSV adds explicit immutable source-header-to-field mappings (replacing synonyms),
+  generic-date role selection, separate default_currency and expected_currency,
+  physical header selection/bounded search, explicit supported encodings and
+  delimiters. Source scope, exact monetary signs, amount ambiguity and row guards
+  remain active. Default unconfigured corpus output stays unchanged.
+- Added data-only v1 CsvProfile/load_csv_profile, Python/CLI parse/compare parity
+  and a guarded CSV format override. Five synthetic exporter layouts have
+  independently invented full expectations. The optional CSV backend normalizes
+  only its count-check input and retains native canonical/source raw semantics.
+- Configured transactions add raw.csv_configuration and source_line_start;
+  currency fallback adds CONFIGURED_CURRENCY and never overwrites source values.
+  Constraint violations fail explicitly. Canonical fields/schema remain 1.1,
+  dependencies are unchanged and original positional CsvOptions calls still work.
+  The conformance runner and its v1 schemas accept the expanded optional fields.
+
 - Added source-distribution conformance tooling with version-1 manifest,
   independently frozen expectation and report schemas, plus CSV/MT940/CAMT/OFX
   synthetic examples copied from existing independent corpus goldens. The runner

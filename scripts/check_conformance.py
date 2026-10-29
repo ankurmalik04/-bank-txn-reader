@@ -249,12 +249,8 @@ def validate_manifest(value):
         fields(
             options,
             set(),
-            {"decimal_separator", "grouping_separator", "date_format"},
+            set(CsvOptions.__dataclass_fields__),
             at="csv_options",
-        )
-        require(
-            all(v is None or isinstance(v, str) for v in options.values()),
-            "csv_options: expected text or null",
         )
         try:
             CsvOptions(**options)
