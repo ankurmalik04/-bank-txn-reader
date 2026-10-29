@@ -1,0 +1,406 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BankParser import assessment v1",
+  "type": "object",
+  "properties": {
+    "assessment_schema_version": {
+      "const": "1"
+    },
+    "status": {
+      "enum": [
+        "ready",
+        "review",
+        "not-ready"
+      ]
+    },
+    "policy": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "booking_date": {
+          "enum": [
+            "ignore",
+            "review",
+            "block"
+          ]
+        },
+        "value_date": {
+          "enum": [
+            "ignore",
+            "review",
+            "block"
+          ]
+        },
+        "transaction_currency": {
+          "enum": [
+            "ignore",
+            "review",
+            "block"
+          ]
+        },
+        "account_identity": {
+          "enum": [
+            "ignore",
+            "review",
+            "block"
+          ]
+        },
+        "description": {
+          "enum": [
+            "ignore",
+            "review",
+            "block"
+          ]
+        },
+        "reference": {
+          "enum": [
+            "ignore",
+            "review",
+            "block"
+          ]
+        },
+        "opening_balance": {
+          "enum": [
+            "ignore",
+            "review",
+            "block"
+          ]
+        },
+        "closing_balance": {
+          "enum": [
+            "ignore",
+            "review",
+            "block"
+          ]
+        },
+        "statement_period": {
+          "enum": [
+            "ignore",
+            "review",
+            "block"
+          ]
+        },
+        "duplicate_candidates": {
+          "enum": [
+            "ignore",
+            "review",
+            "block"
+          ]
+        },
+        "configured_currency": {
+          "enum": [
+            "ignore",
+            "review",
+            "block"
+          ]
+        },
+        "value_date_outside_period": {
+          "enum": [
+            "ignore",
+            "review",
+            "block"
+          ]
+        },
+        "other_incomplete_checks": {
+          "enum": [
+            "ignore",
+            "review",
+            "block"
+          ]
+        },
+        "other_warnings": {
+          "enum": [
+            "ignore",
+            "review",
+            "block"
+          ]
+        },
+        "empty_activity": {
+          "enum": [
+            "ignore",
+            "review",
+            "block"
+          ]
+        },
+        "allow_destination_account": {
+          "type": "boolean"
+        },
+        "value_date_exempt_formats": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "csv",
+              "mt940",
+              "camt053",
+              "ofx"
+            ]
+          },
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "id",
+        "version",
+        "booking_date",
+        "value_date",
+        "transaction_currency",
+        "account_identity",
+        "description",
+        "reference",
+        "opening_balance",
+        "closing_balance",
+        "statement_period",
+        "duplicate_candidates",
+        "configured_currency",
+        "value_date_outside_period",
+        "other_incomplete_checks",
+        "other_warnings",
+        "empty_activity",
+        "allow_destination_account",
+        "value_date_exempt_formats"
+      ],
+      "additionalProperties": false
+    },
+    "destination": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "\\S"
+            },
+            "currency": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[A-Z]{3}(?![\\s\\S])"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "source_account_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "\\S"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "source_iban": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "\\S"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "mapping_confirmed": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "id",
+            "currency",
+            "source_account_id",
+            "source_iban",
+            "mapping_confirmed"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "account_origin": {
+      "enum": [
+        "source",
+        "destination-context",
+        "missing"
+      ]
+    },
+    "result_fingerprint": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}(?![\\s\\S])"
+    },
+    "recorded_validation_status": {
+      "enum": [
+        "passed",
+        "warning",
+        "failed"
+      ]
+    },
+    "validation": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "enum": [
+            "passed",
+            "warning",
+            "failed"
+          ]
+        },
+        "checks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "status": {
+                "enum": [
+                  "passed",
+                  "skipped",
+                  "failed"
+                ]
+              },
+              "message": {
+                "type": "string"
+              },
+              "expected": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "actual": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "code",
+              "status",
+              "message",
+              "expected",
+              "actual"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "status",
+        "checks"
+      ],
+      "additionalProperties": false
+    },
+    "reasons": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "\\S"
+          },
+          "severity": {
+            "enum": [
+              "review",
+              "block"
+            ]
+          },
+          "path": {
+            "type": "string",
+            "pattern": "\\S"
+          },
+          "transaction_indices": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "uniqueItems": true
+          },
+          "message": {
+            "type": "string"
+          },
+          "source_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "code",
+          "severity",
+          "path",
+          "transaction_indices",
+          "message",
+          "source_code"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "duplicate_candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "enum": [
+              "transaction-id",
+              "similar-record"
+            ]
+          },
+          "transaction_indices": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "uniqueItems": true,
+            "minItems": 2
+          },
+          "fingerprint": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}(?![\\s\\S])"
+          },
+          "reviewed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "kind",
+          "transaction_indices",
+          "fingerprint",
+          "reviewed"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "assessment_schema_version",
+    "status",
+    "policy",
+    "destination",
+    "account_origin",
+    "result_fingerprint",
+    "recorded_validation_status",
+    "validation",
+    "reasons",
+    "duplicate_candidates"
+  ],
+  "additionalProperties": false
+}

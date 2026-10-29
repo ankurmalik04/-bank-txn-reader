@@ -165,6 +165,22 @@ This is a list of common codes, not an exhaustive enumeration. More specific
 encoding, date, balance and transaction errors exist; do not depend on message
 wording for control flow.
 
+## Assess destination readiness
+
+`assess_import(result, policy=None, *, destination=None, reviewed_duplicates=())`
+returns a separate ImportAssessment with ready/review/not-ready status and
+structured reasons. ImportPolicy declares destination requirements; optional
+DestinationAccount supplies explicitly confirmed import context without changing
+source facts. Failed recorded or recomputed validation always blocks. Candidate
+repeats are reported, never removed; reviews bind to a canonical result digest.
+
+Use load_import_policy(path) for bounded data-only v1 JSON policies, or construct
+ImportPolicy directly. The new `bankparser assess` command emits the report with
+exits 0/5/6 for ready/review/not-ready and 2 for errors. Parse/compare JSON and
+exits stay unchanged. Policy/report schemas are versioned separately from parse
+schema 1.1. See [import readiness](import-readiness.md) for defaults, context,
+review-token semantics, reason fields and limitations.
+
 ## Compare and serialize
 
 `implementations(format)` lists configured names without importing optional

@@ -1,7 +1,7 @@
 include .gitattributes LICENSE README.md CHANGELOG.md CONTRIBUTING.md SUPPORT.md SECURITY.md THIRD_PARTY_NOTICES.md
 include docs/compatibility.md
 include docs/api.md docs/dependencies.md
-include docs/conformance-plan.md docs/conformance.md docs/csv-profiles.md
+include docs/conformance-plan.md docs/conformance.md docs/csv-profiles.md docs/import-readiness.md
 recursive-include docs/schemas *.json
 include corpus/PROVENANCE.md
 include scripts/export_publication.py corpus/generate.py
@@ -12,6 +12,7 @@ recursive-include docs/audits *.json *.txt
 recursive-include examples *.py
 recursive-include examples/conformance *.json
 recursive-include examples/csv-profiles *.json *.csv
+recursive-include examples/import-readiness *.json
 recursive-include examples/output *.json
 recursive-include corpus *.mt940 *.xml *.ofx *.qfx *.csv *.json
 recursive-include tests *.py

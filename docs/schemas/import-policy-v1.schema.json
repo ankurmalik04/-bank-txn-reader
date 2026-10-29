@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BankParser import policy v1",
+  "type": "object",
+  "properties": {
+    "policy_schema_version": {
+      "const": "1"
+    },
+    "policy": {
+      "$ref": "#/$defs/policy"
+    }
+  },
+  "required": [
+    "policy_schema_version",
+    "policy"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "policy": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "booking_date": {
+          "enum": [
+            "ignore",
+            "review",
+            "block"
+          ]
+        },
+        "value_date": {
+          "enum": [
+            "ignore",
+            "review",
+            "block"
+          ]
+        },
+        "transaction_currency": {
+          "enum": [
+            "ignore",
+            "review",
+            "block"
+          ]
+        },
+        "account_identity": {
+          "enum": [
+            "ignore",
+            "review",
+            "block"
+          ]
+        },
+        "description": {
+          "enum": [
+            "ignore",
+            "review",
+            "block"
+          ]
+        },
+        "reference": {
+          "enum": [
+            "ignore",
+            "review",
+            "block"
+          ]
+        },
+        "opening_balance": {
+          "enum": [
+            "ignore",
+            "review",
+            "block"
+          ]
+        },
+        "closing_balance": {
+          "enum": [
+            "ignore",
+            "review",
+            "block"
+          ]
+        },
+        "statement_period": {
+          "enum": [
+            "ignore",
+            "review",
+            "block"
+          ]
+        },
+        "duplicate_candidates": {
+          "enum": [
+            "ignore",
+            "review",
+            "block"
+          ]
+        },
+        "configured_currency": {
+          "enum": [
+            "ignore",
+            "review",
+            "block"
+          ]
+        },
+        "value_date_outside_period": {
+          "enum": [
+            "ignore",
+            "review",
+            "block"
+          ]
+        },
+        "other_incomplete_checks": {
+          "enum": [
+            "ignore",
+            "review",
+            "block"
+          ]
+        },
+        "other_warnings": {
+          "enum": [
+            "ignore",
+            "review",
+            "block"
+          ]
+        },
+        "empty_activity": {
+          "enum": [
+            "ignore",
+            "review",
+            "block"
+          ]
+        },
+        "allow_destination_account": {
+          "type": "boolean"
+        },
+        "value_date_exempt_formats": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "csv",
+              "mt940",
+              "camt053",
+              "ofx"
+            ]
+          },
+          "uniqueItems": true
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    }
+  }
+}
