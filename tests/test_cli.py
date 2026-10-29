@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.util
 import json
 
 import pytest
@@ -62,6 +63,88 @@ def test_errors_are_structured_on_stderr(capsys, tmp_path):
     captured = capsys.readouterr()
     assert captured.out == ""
     assert json.loads(captured.err)["error"]["code"] == "INPUT_ERROR"
+
+
+def test_redacted_cli_output_omits_source_sensitive_markers(capsys, tmp_path):
+    marker = "PRIVATE_MARKER_829174"
+    path = tmp_path / f"{marker}.csv"
+    path.write_text(
+        "Booking Date,Description,Amount,Currency,IBAN,Reference\n"
+        f"2026-10-01,{marker},-2.50,GBP,{marker},{marker}\n"
+    )
+    assert main([str(path), "--output-policy", "redacted-diagnostic"]) == 0
+    captured = capsys.readouterr()
+    assert marker not in captured.out
+    report = json.loads(captured.out)
+    assert report["transaction_count"] == 1
+    assert report["format"] == "csv"
+    assert "transactions" not in report
+
+
+def test_redacted_json_errors_omit_message_and_location(capsys, tmp_path):
+    path = tmp_path / "PRIVATE_MARKER_829174.csv"
+    assert (
+        main(
+            [
+                str(path),
+                "--output-policy",
+                "redacted-diagnostic",
+                "--json-errors",
+            ]
+        )
+        == 2
+    )
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "PRIVATE_MARKER_829174" not in captured.err
+    assert json.loads(captured.err) == {"error": {"code": "INPUT_ERROR"}}
+
+
+def test_canonical_cli_policy_omits_raw_but_keeps_canonical_fields(capsys):
+    assert (
+        main(
+            [
+                "corpus/csv/basic_valid.csv",
+                "--output-policy",
+                "canonical",
+            ]
+        )
+        == 0
+    )
+    result = json.loads(capsys.readouterr().out)
+    assert "raw" not in result["transactions"][0]
+    assert result["transactions"][0]["description"] == "Test contribution"
+
+
+def test_redacted_compare_and_assess_cli_outputs(capsys, tmp_path):
+    marker = "PRIVATE_MARKER_829174"
+    path = tmp_path / f"{marker}.csv"
+    path.write_text(
+        "Booking Date,Description,Amount,Currency,IBAN,Reference,Balance\n"
+        f"2026-10-01,{marker},-2.50,GBP,{marker},{marker},97.50\n"
+    )
+    if importlib.util.find_spec("bankstatementparser") is not None:
+        assert (
+            main(
+                [
+                    "compare",
+                    str(path),
+                    "--output-policy",
+                    "redacted-diagnostic",
+                ]
+            )
+            == 0
+        )
+        comparison = json.loads(capsys.readouterr().out)
+        assert marker not in repr(comparison)
+        assert "difference_count" in comparison
+
+    status = main(["assess", str(path), "--output-policy", "redacted-diagnostic"])
+    captured = capsys.readouterr()
+    assert status in {0, 5, 6}
+    assert marker not in captured.out
+    assessment = json.loads(captured.out)
+    assert "duplicate_candidate_count" in assessment
 
 
 def test_human_errors_are_on_stderr(capsys, tmp_path):

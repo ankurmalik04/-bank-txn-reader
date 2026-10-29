@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Serialization now accepts `policy="full"|"canonical"|"redacted-diagnostic"`.
+  The full default is byte-shape compatible; canonical omits raw fields but can
+  still expose sensitive canonical values. Redacted diagnostics use a strict
+  structural allowlist and omit messages, values, identifiers, paths and
+  fingerprints. The parse/compare/assess CLI commands accept the matching
+  `--output-policy`; redacted CLI errors omit message and location. This reduces
+  exposure but does not promise anonymity, and no input objects are mutated.
 - CAMT now accepts repeated financial alignment keys only when every source
   enrichment field is semantically identical across the repeated records and
   the backend fields used as enrichment fallbacks also agree. Source provenance

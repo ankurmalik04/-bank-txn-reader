@@ -39,6 +39,7 @@ def build_parser() -> argparse.ArgumentParser:
     parse_parser.add_argument(
         "--json-errors", action="store_true", help="emit structured errors on stderr"
     )
+    _add_output_policy(parse_parser)
 
     compare_parser = subparsers.add_parser(
         "compare", help="compare canonical output from parser implementations"
@@ -59,6 +60,7 @@ def build_parser() -> argparse.ArgumentParser:
     compare_parser.add_argument(
         "--json-errors", action="store_true", help="emit structured errors on stderr"
     )
+    _add_output_policy(compare_parser)
 
     assess_parser = subparsers.add_parser(
         "assess", help="assess parsed data against destination import policy"
@@ -80,6 +82,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--reviewed-duplicate", action="append", metavar="FINGERPRINT"
     )
     assess_parser.add_argument("--json-errors", action="store_true")
+    _add_output_policy(assess_parser)
 
     impl = subparsers.add_parser("implementations", help="list parser implementations")
     impl.add_argument("format")
@@ -122,6 +125,15 @@ def _add_csv_options(parser: argparse.ArgumentParser) -> None:
     )
     parser.add_argument(
         "--csv-profile", metavar="FILE", help="version-1 data-only CSV profile JSON"
+    )
+
+
+def _add_output_policy(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--output-policy",
+        choices=("full", "canonical", "redacted-diagnostic"),
+        default="full",
+        help="serialization policy (default: full)",
     )
 
 
@@ -176,7 +188,13 @@ def main(argv: Sequence[str] | None = None) -> int:
                 csv_options=csv_options,
                 **extra,
             )
-            print(json.dumps(to_primitive(report), indent=2, sort_keys=True))
+            print(
+                json.dumps(
+                    to_primitive(report, policy=args.output_policy),
+                    indent=2,
+                    sort_keys=True,
+                )
+            )
             return 4 if args.fail_on_diff and not report.matches else 0
         policy = None
         destination = None
@@ -212,16 +230,33 @@ def main(argv: Sequence[str] | None = None) -> int:
                 destination=destination,
                 reviewed_duplicates=tuple(args.reviewed_duplicate or ()),
             )
-            print(json.dumps(to_primitive(assessment), indent=2, sort_keys=True))
+            print(
+                json.dumps(
+                    to_primitive(assessment, policy=args.output_policy),
+                    indent=2,
+                    sort_keys=True,
+                )
+            )
             return {"ready": 0, "review": 5, "not-ready": 6}[assessment.status]
-        print(json.dumps(to_primitive(result), indent=2, sort_keys=True))
+        print(
+            json.dumps(
+                to_primitive(result, policy=args.output_policy),
+                indent=2,
+                sort_keys=True,
+            )
+        )
         if result.validation.status == "failed" or (
             args.strict_validation and result.validation.status != "passed"
         ):
             return 3
         return 0
     except BankParserError as exc:
-        if getattr(args, "json_errors", False):
+        if getattr(args, "output_policy", "full") == "redacted-diagnostic":
+            if getattr(args, "json_errors", False):
+                print(json.dumps({"error": {"code": exc.code}}), file=sys.stderr)
+            else:
+                print(f"bankparser: {exc.code}", file=sys.stderr)
+        elif getattr(args, "json_errors", False):
             print(
                 json.dumps(
                     {

@@ -262,4 +262,18 @@ flag checks agreement, not import readiness or independent correctness.
 
 Use `bankparser.serialization.to_primitive(value)` before JSON serialization.
 Amounts become strings, dates become ISO strings, and tuples become lists.
+The optional `policy` keyword selects `full` (the unchanged default), `canonical`
+(omit every dataclass `raw` field while retaining other canonical data), or
+`redacted-diagnostic`. The redacted diagnostic is a strict summary allowlist:
+format, validation status/check codes, warning codes, transaction count,
+comparison match/difference counts, and readiness status/reason codes/counts.
+It omits free text, amounts, dates, IDs, names, references, paths, raw values,
+expected/actual values and fingerprints. `canonical` output can still contain
+sensitive financial and identity data. Redacted diagnostics reduce exposure but
+do not promise anonymity. Serialization never mutates the input object.
+
+The `parse`, `compare` and `assess` CLI commands accept the same
+`--output-policy {full,canonical,redacted-diagnostic}` option. Full output stays
+the default. With the redacted policy, parse/compare errors suppress message and
+location text; `--json-errors` emits only the structured error code.
 Schema changes and migration instructions are recorded in [CHANGELOG.md](../CHANGELOG.md).
