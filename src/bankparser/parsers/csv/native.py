@@ -159,6 +159,8 @@ class NativeCsvAdapter:
                     ),
                 )
             raw = {"source_line": line, "source_fields": row}
+            if start_line != line:
+                raw["source_line_start"] = start_line
             if cell("date"):
                 raw["source_date"] = cell("date")
             if cell("balance"):

@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Added 35 bounded deterministic property cases for extreme decimal scales,
+  cancellation and conservation, CSV quoting/order, multiline diagnostic
+  locations, comparison coordinates and privacy. Published the coverage/gap
+  matrix in docs/compatibility.md; no new dependency or random campaign added.
+- Multiline default CSV records now retain raw.source_line_start so structured
+  diagnostics report their starting line correctly. The existing source_line
+  continues to identify the record's ending line.
+
 - Added version-1 `Diagnostic` values and public `diagnostics_for` /
   `diagnostic_for_error` helpers. Diagnostics include severity, format, canonical
   field, optional corrective guidance, and zero-based record indices aligned
