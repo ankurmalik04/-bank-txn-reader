@@ -48,6 +48,14 @@ def build_parser() -> argparse.ArgumentParser:
         help="implementation to include; repeat to compare an explicit set",
     )
     _add_csv_options(compare_parser)
+    compare_parser.add_argument(
+        "--fail-on-diff",
+        action="store_true",
+        help="exit 4 if the completed comparison reports differences",
+    )
+    compare_parser.add_argument(
+        "--json-errors", action="store_true", help="emit structured errors on stderr"
+    )
 
     impl = subparsers.add_parser("implementations", help="list parser implementations")
     impl.add_argument("format")
@@ -82,7 +90,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 args.file, implementations=args.implementations, csv_options=csv_options
             )
             print(json.dumps(to_primitive(report), indent=2, sort_keys=True))
-            return 0
+            return 4 if args.fail_on_diff and not report.matches else 0
         result = parse(
             args.file, implementation=args.implementation, csv_options=csv_options
         )

@@ -158,7 +158,12 @@ backends. It does not certify their dependencies are installed.
 `compare(source, *, implementations=None, csv_options=None)` reads one bounded input snapshot,
 runs the selected implementations and returns `ComparisonReport`: `format`,
 `implementations`, `matches` and `differences`. Each difference contains a field
-path and the value from each implementation. Provenance/raw metadata are excluded.
+path, serialized `values` from each implementation, and a `present` boolean map.
+For each implementation, an absent path is represented by `values[name] = null`
+and `present[name] = false`; a present null has `present[name] = true`.
+Empty strings and literal `"<missing>"` text remain ordinary present values.
+Presence refers to the flattened canonical result path, not proof that a bank
+source field existed. Provenance/raw metadata are excluded.
 At least two distinct implementations are required; failures abort comparison.
 An explicit selection runs only those implementations, without invoking an
 unselected default. Omitted selection uses all configured implementations.
@@ -184,6 +189,45 @@ signed zero alone do not produce differences. Reported differences retain the
 original serialized values. Other fields, including numeric-looking references,
 compare exactly. `compare_results(mapping)` offers the same comparison for
 already-parsed results.
+
+For example, a field absent from one implementation's extra transaction and
+reported literally by another can produce:
+
+```json
+{
+  "path": "transactions[1].reference",
+  "values": {"one": null, "two": "<missing>"},
+  "present": {"one": false, "two": true}
+}
+```
+
+The `present` map is additive comparison output. Consumers should read it to
+interpret null placeholders; the old `"<missing>"` string is no longer an absence
+marker. `compare` and `compare_results` populate every implementation's flag.
+The existing two-argument `ComparisonDifference(path, values)` constructor is
+still accepted, with an empty presence map for caller-created objects. Canonical
+parse-result schema remains 1.1.
+
+The comparison CLI accepts `--fail-on-diff` and `--json-errors`:
+
+```bash
+bankparser compare statement.mt940 --fail-on-diff --json-errors
+```
+
+| Comparison exit | Meaning |
+| --- | --- |
+| 0 | Completed; with `--fail-on-diff`, the report matches. Without it, differences also exit 0. |
+| 2 | Loading, detection, dependency, option, parsing or comparison error; no comparison report is emitted. |
+| 4 | Completed with differences and `--fail-on-diff` enabled. |
+
+Completed reports always go to stdout, including on exit 4; stderr is empty.
+Errors go to stderr; `--json-errors` uses the same `error` object with `code`,
+`message` and nullable `location` as the parse command. Without it errors remain
+human-readable. Argument/usage errors remain argparse text on stderr with exit 2.
+Errors take precedence over mismatch handling; no partial comparison report is
+returned. Parse validation exit 3 and Python `compare` behavior are unchanged.
+Matching output can include identical failed/skipped validation checks; this
+flag checks agreement, not import readiness or independent correctness.
 
 Use `bankparser.serialization.to_primitive(value)` before JSON serialization.
 Amounts become strings, dates become ISO strings, and tuples become lists.
