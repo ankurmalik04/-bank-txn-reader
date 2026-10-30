@@ -185,7 +185,9 @@ id. Repeat --reviewed-duplicate FINGERPRINT for explicitly reviewed groups.
 Completed assessments always emit full JSON on stdout, including exits 5/6,
 with empty stderr. Errors emit no assessment stdout; --json-errors uses the
 existing structured error object on stderr. Argument/usage errors remain
-argparse text. Parse validation exit 3 and comparison mismatch exit 4 are unchanged.
+argparse text unless `--output-policy redacted-diagnostic` is requested; then
+only `CLI_USAGE_ERROR` is emitted (as a code-only object with `--json-errors`).
+Parse validation exit 3 and comparison mismatch exit 4 are unchanged.
 There is no import/ledger write operation.
 
 Python reports use the existing `to_primitive` before json.dumps. The separate

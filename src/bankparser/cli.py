@@ -6,7 +6,7 @@ import argparse
 import json
 import sys
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, NoReturn
 
 from bankparser.api import implementations, parse
 from bankparser.comparison import compare
@@ -14,14 +14,23 @@ from bankparser.errors import BankParserError, InputError
 from bankparser.options import CsvOptions
 from bankparser.profiles import load_csv_profile
 from bankparser.readiness import DestinationAccount, assess_import, load_import_policy
-from bankparser.serialization import to_primitive
+from bankparser.serialization import _safe_code, to_primitive
 from bankparser.version import __version__
 
 _COMMANDS = {"parse", "compare", "assess", "implementations"}
 
 
-def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="bankparser")
+class _RedactedArgumentParser(argparse.ArgumentParser):
+    def error(self, message: str) -> NoReturn:
+        # argparse messages can contain arbitrary option values and file paths.
+        raise InputError("Invalid command line arguments", code="CLI_USAGE_ERROR")
+
+
+def build_parser(*, redacted_errors: bool = False) -> argparse.ArgumentParser:
+    parser_class = (
+        _RedactedArgumentParser if redacted_errors else argparse.ArgumentParser
+    )
+    parser = parser_class(prog="bankparser")
     parser.add_argument(
         "--version", action="version", version=f"%(prog)s {__version__}"
     )
@@ -169,7 +178,13 @@ def _options_from_args(args: argparse.Namespace) -> CsvOptions | None:
 
 def main(argv: Sequence[str] | None = None) -> int:
     raw_args = list(argv) if argv is not None else sys.argv[1:]
-    args = build_parser().parse_args(_normalize_argv(raw_args))
+    try:
+        args = build_parser(redacted_errors=_redacted_requested(raw_args)).parse_args(
+            _normalize_argv(raw_args)
+        )
+    except InputError as exc:
+        _print_redacted_error(exc.code, "--json-errors" in raw_args)
+        return 2
     try:
         if args.command == "implementations":
             for implementation in implementations(args.format):
@@ -252,10 +267,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
     except BankParserError as exc:
         if getattr(args, "output_policy", "full") == "redacted-diagnostic":
-            if getattr(args, "json_errors", False):
-                print(json.dumps({"error": {"code": exc.code}}), file=sys.stderr)
-            else:
-                print(f"bankparser: {exc.code}", file=sys.stderr)
+            _print_redacted_error(exc.code, getattr(args, "json_errors", False))
         elif getattr(args, "json_errors", False):
             print(
                 json.dumps(
@@ -273,6 +285,33 @@ def main(argv: Sequence[str] | None = None) -> int:
             location = f" ({exc.location})" if exc.location else ""
             print(f"bankparser: {exc.code}: {exc}{location}", file=sys.stderr)
         return 2
+
+
+def _print_redacted_error(code: str, json_errors: bool) -> None:
+    safe_code = _safe_code(code)
+    if json_errors:
+        print(json.dumps({"error": {"code": safe_code}}), file=sys.stderr)
+    else:
+        print(f"bankparser: {safe_code}", file=sys.stderr)
+
+
+def _redacted_requested(argv: list[str]) -> bool:
+    """Detect redaction before argparse can echo invalid arguments.
+
+    Accept argparse's option abbreviations and equals syntax. Any explicit
+    redaction request protects usage errors, even among conflicting options.
+    Arguments after the end-of-options delimiter are positional data.
+    """
+    for index, token in enumerate(argv):
+        if token == "--":
+            break
+        option, separator, value = token.partition("=")
+        if option.startswith("--") and "--output-policy".startswith(option):
+            if not separator and index + 1 < len(argv):
+                value = argv[index + 1]
+            if value == "redacted-diagnostic":
+                return True
+    return False
 
 
 def _normalize_argv(argv: list[str]) -> list[str]:

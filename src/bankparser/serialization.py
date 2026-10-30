@@ -15,7 +15,98 @@ _IMPLEMENTATIONS = frozenset({"native", "wolph", "bankstatementparser", "ofxpars
 _STATUSES = frozenset(
     {"passed", "warning", "failed", "skipped", "ready", "review", "not-ready"}
 )
-_CODE = re.compile(r"[A-Z][A-Z0-9_]{0,63}\Z")
+# Static, reviewed built-in diagnostics only. New codes require explicit review;
+# custom diagnostics must never expand this privacy allowlist at runtime.
+_TRUSTED_CODES = frozenset(
+    {
+        "ACCOUNT_IDENTITY",
+        "AMBIGUOUS_AMOUNT",
+        "AMBIGUOUS_BALANCE",
+        "AMBIGUOUS_COLUMNS",
+        "AMBIGUOUS_CSV_HEADER",
+        "AMBIGUOUS_DATE_SEMANTICS",
+        "AMBIGUOUS_MOVEMENT",
+        "AMBIGUOUS_TRANSACTION_ALIGNMENT",
+        "BALANCE_RECONCILIATION",
+        "BANKPARSER_ERROR",
+        "CAMT_BATCH_TOTAL_MISMATCH",
+        "CAMT_DIRECTION_CONFLICT",
+        "CLI_USAGE_ERROR",
+        "COMPARISON_ERROR",
+        "CONFIGURED_CURRENCY",
+        "CSV_BALANCE_ORDER_UNKNOWN",
+        "CSV_CURRENCY_CONSTRAINT",
+        "CURRENCY_CONSISTENCY",
+        "DESTINATION_ACCOUNT_CONFLICT",
+        "DESTINATION_CURRENCY_CONFLICT",
+        "DUPLICATE_CANDIDATE",
+        "DUPLICATE_TRANSACTION_ID",
+        "EMPTY_ACTIVITY",
+        "EMPTY_STATEMENT",
+        "FAILED_VALIDATION",
+        "FINITE_AMOUNTS",
+        "INCOMPLETE_OUTPUT",
+        "INCOMPLETE_VALIDATION",
+        "INPUT_ERROR",
+        "INVALID_AMOUNT",
+        "INVALID_CAMT_AMOUNT_STRUCTURE",
+        "INVALID_CAMT_DIRECTION",
+        "INVALID_CSV",
+        "INVALID_CSV_HEADER",
+        "INVALID_CSV_ROW",
+        "INVALID_CURRENCY",
+        "INVALID_DATE",
+        "INVALID_ENCODING",
+        "INVALID_OFX_STRUCTURE",
+        "INVALID_STATEMENT_DATE",
+        "MISSING_ACCOUNT_IDENTITY",
+        "MISSING_AMOUNT",
+        "MISSING_BOOKING_DATE",
+        "MISSING_CAMT_CURRENCY",
+        "MISSING_CLOSING_BALANCE",
+        "MISSING_CLOSING_BALANCE_CURRENCY",
+        "MISSING_CSV_COLUMN",
+        "MISSING_CURRENCY",
+        "MISSING_DEPENDENCY",
+        "MISSING_DESCRIPTION",
+        "MISSING_OPENING_BALANCE",
+        "MISSING_OPENING_BALANCE_CURRENCY",
+        "MISSING_REFERENCE",
+        "MISSING_STATEMENT_PERIOD",
+        "MISSING_TRANSACTION_CURRENCY",
+        "MISSING_VALUE_DATE",
+        "MULTIPLE_STATEMENTS",
+        "OFX_BACKEND_ERROR",
+        "OFX_BACKEND_MISMATCH",
+        "OFX_BACKEND_WARNING",
+        "OFX_RESPONSE_ERROR",
+        "OFX_RESPONSE_WARNING",
+        "PARSER_WARNING",
+        "PARSE_ERROR",
+        "SIGNED_CAMT_AMOUNT",
+        "SIGNED_DEBIT_CREDIT",
+        "STATEMENT_DATE_ORDER",
+        "TRANSACTION_ALIGNMENT_MISMATCH",
+        "TRANSACTION_BOOKING_DATES",
+        "TRANSACTION_COUNT_MISMATCH",
+        "TRANSACTION_CURRENCIES",
+        "TRANSACTION_VALUE_DATES",
+        "UNCONFIRMED_ACCOUNT_MAPPING",
+        "UNEXPLAINED_VALIDATION_WARNING",
+        "UNKNOWN_CODE",
+        "UNKNOWN_IMPLEMENTATION",
+        "UNPARSED_TRANSACTION_DATE",
+        "UNSUPPORTED_CORRECTION",
+        "UNSUPPORTED_ENTRY_STATUS",
+        "UNSUPPORTED_FORMAT",
+        "UNSUPPORTED_OFX_PROFILE",
+        "UNSUPPORTED_OFX_SCOPE",
+        "UNSUPPORTED_PENDING_ACTIVITY",
+        "UNSUPPORTED_TRANSACTION",
+        "UNSUPPORTED_TRANSACTION_CURRENCY",
+        "VALUE_DATE_OUTSIDE_PERIOD",
+    }
+)
 
 
 def to_primitive(value: Any, *, policy: OutputPolicy = "full") -> Any:
@@ -135,8 +226,10 @@ def _redacted_warnings(values: Any) -> list[dict[str, str | None]]:
     return [{"code": _safe_code(item.code)} for item in values]
 
 
-def _safe_code(value: Any) -> str | None:
-    return value if isinstance(value, str) and _CODE.fullmatch(value) else None
+def _safe_code(value: Any) -> str:
+    return (
+        value if isinstance(value, str) and value in _TRUSTED_CODES else "UNKNOWN_CODE"
+    )
 
 
 def _safe_version(value: Any) -> str | None:
