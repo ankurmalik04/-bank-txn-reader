@@ -48,7 +48,7 @@ class NativeCsvAdapter:
         scope: tuple[str | None, str | None, str | None] | None = None
         start_date: date | None = None
         end_date: date | None = None
-        for start_line, line, row in rows:
+        for start_line, end_line, row in rows:
 
             def cell(name: str, row: dict[str, str] = row) -> str:
                 return row.get(columns.get(name, ""), "").strip()
@@ -62,7 +62,7 @@ class NativeCsvAdapter:
                 raise ParseError(
                     "CSV currency is missing or conflicts with expected_currency",
                     code="CSV_CURRENCY_CONSTRAINT",
-                    location=f"CSV line {line}, currency",
+                    location=f"CSV line {start_line}, currency",
                 )
             if source_currency is None and options.default_currency is not None:
                 warnings.setdefault(
@@ -70,7 +70,7 @@ class NativeCsvAdapter:
                     Warning(
                         "CONFIGURED_CURRENCY",
                         "Missing source currency filled by explicit default_currency",
-                        f"CSV line {line}, currency",
+                        f"CSV line {start_line}, currency",
                     ),
                 )
             account_id = cell("account_id") or cell("iban") or None
@@ -90,12 +90,12 @@ class NativeCsvAdapter:
                     location="CSV account/currency columns",
                 )
             if "amount" in columns:
-                amount = _amount(cell("amount"), options, line, columns["amount"])
+                amount = _amount(cell("amount"), options, start_line, columns["amount"])
             else:
                 movements = {}
                 for name in ("debit", "credit"):
                     movements[name] = (
-                        _amount(cell(name), options, line, columns[name])
+                        _amount(cell(name), options, start_line, columns[name])
                         if cell(name)
                         else Decimal(0)
                     )
@@ -103,19 +103,19 @@ class NativeCsvAdapter:
                         raise ParseError(
                             "Debit/Credit cells must be non-negative magnitudes; use a signed Amount column",
                             code="SIGNED_DEBIT_CREDIT",
-                            location=f"CSV line {line}, column {columns[name]!r}",
+                            location=f"CSV line {start_line}, column {columns[name]!r}",
                         )
                 if not cell("debit") and not cell("credit"):
                     raise ParseError(
                         "Transaction has no amount",
                         code="MISSING_AMOUNT",
-                        location=f"CSV line {line}",
+                        location=f"CSV line {start_line}",
                     )
                 if movements["debit"] and movements["credit"]:
                     raise ParseError(
                         "Both Debit and Credit are non-zero",
                         code="AMBIGUOUS_MOVEMENT",
-                        location=f"CSV line {line}",
+                        location=f"CSV line {start_line}",
                     )
                 amount = (
                     movements["credit"]
@@ -137,7 +137,7 @@ class NativeCsvAdapter:
                         Warning(
                             "UNPARSED_TRANSACTION_DATE",
                             "Date is invalid or ambiguous; set CsvOptions.date_format",
-                            f"CSV line {line}, column {columns[name]!r}",
+                            f"CSV line {start_line}, column {columns[name]!r}",
                         ),
                     )
             if cell("date"):
@@ -146,7 +146,7 @@ class NativeCsvAdapter:
                     Warning(
                         "AMBIGUOUS_DATE_SEMANTICS",
                         "Generic Date is preserved but is not a booking or value date",
-                        f"CSV line {line}, column {columns['date']!r}",
+                        f"CSV line {start_line}, column {columns['date']!r}",
                     ),
                 )
             if cell("balance"):
@@ -155,10 +155,13 @@ class NativeCsvAdapter:
                     Warning(
                         "CSV_BALANCE_ORDER_UNKNOWN",
                         "Running balance is preserved; its ordering and timing are unknown",
-                        f"CSV line {line}, column {columns['balance']!r}",
+                        f"CSV line {start_line}, column {columns['balance']!r}",
                     ),
                 )
-            raw = {"source_line": line, "source_fields": row}
+            # Preserve the legacy ending line; record diagnostics use start_line.
+            raw = {"source_line": end_line, "source_fields": row}
+            if start_line != end_line:
+                raw["source_line_start"] = start_line
             if cell("date"):
                 raw["source_date"] = cell("date")
             if cell("balance"):

@@ -1,5 +1,33 @@
 # Compatibility and conformance
 
+## BP-11 bounded adversarial coverage
+
+The existing suite already contains negative tests. The following gap matrix
+records the additional deterministic property cases and the remaining limits.
+
+| Boundary | Existing evidence | BP-11 increment or remaining gap |
+| --- | --- | --- |
+| Decimal context and exact money | `test_decimal_context.py`, validation tests | 16 delimiter/scale combinations; scales 0/2/18/120, 125-digit cancellation, one-unit remainder, signed zero, hostile context/traps; integer sum oracle and deliberately wrong balance. |
+| CSV quoting, encoding, row and sign failures | `test_native_csv.py`, `test_csv_profiles.py`, `test_source_safety.py` | Generated quoted delimiters/newlines, BOM, repeated references and exact ordered multiplicity. Three multiline diagnostic cases include indices beyond 9. |
+| CAMT scope, direction, duplicates, batch and FX | `test_camt_financial_guards.py`, `test_p0_validation.py`, metadata regressions | Existing targeted cases retained. Broader generated XML/entity campaigns remain outstanding. |
+| OFX and MT940 IDs, dates, scope and malformed records | `test_ofxparse_adapter.py`, `test_source_safety.py`, scope tests | Existing adversarial examples retained; broader truncation/type mutation campaigns remain outstanding. |
+| Size and snapshot boundaries | `test_source_safety.py`, API/release tests | Existing bounded-read and mismatch cases retained; no new resource-limit campaign. |
+| Comparison and privacy | `test_comparison.py`, serialization and diagnostic tests | 16 single-reference mutations across indices 0/2/10/11, including null, empty and literal missing marker; exact difference path/value/presence checks and redacted output. |
+
+Run `PYTHONPATH=src python -m pytest tests/test_adversarial_properties.py` for
+the 35 new cases. Each parametrized case is a bounded reproducer: no random
+seed, persisted example database, network, new test dependency or slow campaign
+is required. These checks establish the listed properties on synthetic inputs;
+they do not replace production/held-out profile evidence or general fuzzing.
+
+The cases exposed a multiline CSV location issue: default parsing retained only
+the ending line. Such records now also retain `raw.source_line_start`, allowing
+diagnostics to report their actual starting line. `raw.source_line` retains its
+existing ending-line meaning. CSV parser warnings and row/amount/currency errors
+also use record starting lines. Regression cases cover invalid dates and amounts,
+split movements, currency constraints and row widths across LF, CRLF and CR files;
+blank lines and preceding multiline records count toward the physical location.
+
 This describes released BankParser 0.5.0a2, schema 1.1, with unreleased checkout
 changes called out below. Coverage is established by synthetic
 fixtures and regression tests. It does not certify a bank, every version of a
