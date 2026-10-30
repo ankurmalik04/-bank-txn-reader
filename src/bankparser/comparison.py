@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from decimal import Decimal, InvalidOperation, localcontext
 from os import PathLike
 from typing import Any
@@ -16,15 +16,21 @@ from bankparser.models import ParseResult
 from bankparser.options import CsvOptions
 from bankparser.serialization import to_primitive
 
-_MISSING = "<missing>"
+_MISSING = object()
 
 
 @dataclass(frozen=True, slots=True)
 class ComparisonDifference:
-    """One canonical field that differs between parser implementations."""
+    """One canonical difference, with explicit presence for each implementation.
+
+    Absent paths have a None value and present=False. A sourced null has
+    present=True. The empty default preserves two-argument construction by
+    callers; reports produced here always populate every presence flag.
+    """
 
     path: str
     values: dict[str, Any]
+    present: dict[str, bool] = field(default_factory=dict)
 
 
 @dataclass(frozen=True, slots=True)
@@ -100,7 +106,18 @@ def compare_results(results: Mapping[str, ParseResult]) -> ComparisonReport:
             for name, value in values.items()
         }
         if len(keys) > 1:
-            differences.append(ComparisonDifference(path=path, values=values))
+            differences.append(
+                ComparisonDifference(
+                    path=path,
+                    values={
+                        name: None if value is _MISSING else value
+                        for name, value in values.items()
+                    },
+                    present={
+                        name: value is not _MISSING for name, value in values.items()
+                    },
+                )
+            )
 
     return ComparisonReport(
         format=next(iter(formats)),

@@ -284,3 +284,140 @@ def test_compare_applies_csv_options_to_each_backend(monkeypatch):
     assert len(results) == 2
     assert all(r.transactions[0].amount == Decimal(1234) for r in results)
     assert all(r.transactions[0].booking_date == date(2026, 5, 4) for r in results)
+
+
+@pytest.mark.parametrize("value", ["<missing>", None, ""])
+def test_absent_field_differs_from_literal_null_and_empty_text(value):
+    from bankparser.serialization import to_primitive
+
+    one = _result("one", None, {})
+    two = replace(
+        one,
+        transactions=one.transactions
+        + (replace(one.transactions[0], reference=value),),
+    )
+    report = compare_results({"one": one, "two": two})
+    differences = {d.path: d for d in report.differences}
+    difference = differences["transactions[1].reference"]
+    assert difference.values == {"one": None, "two": value}
+    assert difference.present == {"one": False, "two": True}
+    serialized = to_primitive(difference)
+    assert serialized == {
+        "path": "transactions[1].reference",
+        "values": {"one": None, "two": value},
+        "present": {"one": False, "two": True},
+    }
+
+
+def test_presence_flags_cover_multiple_implementations_and_json_roundtrip():
+    import json
+
+    from bankparser.serialization import to_primitive
+
+    missing = _result("one", None, {})
+    present = replace(
+        missing,
+        transactions=missing.transactions
+        + (replace(missing.transactions[0], reference="<missing>"),),
+    )
+    null = replace(
+        present,
+        transactions=(
+            present.transactions[0],
+            replace(present.transactions[1], reference=None),
+        ),
+    )
+    report = compare_results({"absent": missing, "literal": present, "null": null})
+    output = json.loads(json.dumps(to_primitive(report)))
+    difference = next(
+        d for d in output["differences"] if d["path"] == "transactions[1].reference"
+    )
+    assert difference == {
+        "path": "transactions[1].reference",
+        "values": {"absent": None, "literal": "<missing>", "null": None},
+        "present": {"absent": False, "literal": True, "null": True},
+    }
+    assert output["matches"] is False
+
+
+def test_present_null_empty_and_literal_values_keep_their_original_meaning():
+    one = _result("one", None, {})
+    results = {
+        name: replace(
+            one, transactions=(replace(one.transactions[0], reference=value),)
+        )
+        for name, value in [("null", None), ("empty", ""), ("literal", "<missing>")]
+    }
+    report = compare_results(results)
+    assert len(report.differences) == 1
+    difference = report.differences[0]
+    assert difference.path == "transactions[0].reference"
+    assert difference.values == {"null": None, "empty": "", "literal": "<missing>"}
+    assert difference.present == {name: True for name in results}
+
+
+def test_missing_empty_container_is_distinct_from_present_null():
+    one = _result("one", None, {})
+    two = replace(one, transactions=())
+    report = compare_results({"one": one, "two": two})
+    difference = next(d for d in report.differences if d.path == "transactions")
+    assert difference.values == {"one": None, "two": []}
+    assert difference.present == {"one": False, "two": True}
+
+
+def test_identical_literal_missing_text_does_not_create_a_difference():
+    one = _result("one", None, {})
+    one = replace(
+        one, transactions=(replace(one.transactions[0], reference="<missing>"),)
+    )
+    report = compare_results({"one": one, "two": one})
+    assert report.matches
+    assert report.differences == ()
+
+
+def test_presence_flags_retain_original_monetary_difference_values():
+    report = compare_results(
+        {"one": _money_result("10.00"), "two": _money_result("10.001")}
+    )
+    assert all(
+        d.values == {"one": "10.00", "two": "10.001"} for d in report.differences
+    )
+    assert all(d.present == {"one": True, "two": True} for d in report.differences)
+
+
+def test_cli_serializes_absent_and_literal_missing_without_sentinel_leak(
+    monkeypatch, capsys
+):
+    import json
+
+    from bankparser.cli import main
+
+    one = _result("one", None, {})
+    two = replace(
+        one,
+        transactions=one.transactions
+        + (replace(one.transactions[0], reference="<missing>"),),
+    )
+    report = compare_results({"one": one, "two": two})
+    monkeypatch.setattr("bankparser.cli.compare", lambda *args, **kwargs: report)
+    assert main(["compare", "synthetic.mt940"]) == 0
+    captured = capsys.readouterr()
+    assert captured.err == ""
+    output = json.loads(captured.out)
+    difference = next(
+        d for d in output["differences"] if d["path"] == "transactions[1].reference"
+    )
+    assert difference["values"] == {"one": None, "two": "<missing>"}
+    assert difference["present"] == {"one": False, "two": True}
+
+
+def test_two_argument_difference_construction_remains_supported():
+    from bankparser.comparison import ComparisonDifference
+    from bankparser.serialization import to_primitive
+
+    difference = ComparisonDifference("account.id", {"one": None, "two": "A"})
+    assert to_primitive(difference) == {
+        "path": "account.id",
+        "values": {"one": None, "two": "A"},
+        "present": {},
+    }

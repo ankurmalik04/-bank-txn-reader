@@ -295,10 +295,23 @@ consistency on that input, not correctness.
 
 Comparison requires at least two configured implementations and their installed
 dependencies; explicit selection runs only the selected implementations, and
-parser errors abort comparison. The CLI exits `0` for a completed
-comparison, including one with differences. Inspect the JSON `matches` field in
-automation. `implementations(format)` lists configured names, even when an
-optional dependency is absent.
+parser errors abort comparison. By default the CLI exits `0` for a completed
+comparison, including one with differences. Add `--fail-on-diff` to exit `4` when
+`matches` is false; the complete comparison JSON is still written to stdout.
+Loading, detection, dependency, option and parsing/comparison errors exit `2`
+with no report on stdout. Add `--json-errors` for structured errors on stderr.
+These switches can be combined for CI:
+
+```bash
+bankparser compare corpus/mt940/basic_valid.mt940 --fail-on-diff --json-errors
+```
+
+Comparison exit codes are `0` for completion (or a match when using
+`--fail-on-diff`), `4` for an opted-in mismatch and `2` for an error. Exit `3`
+remains specific to parse validation. Equal validation failures or warnings can
+still compare equal; comparison is not an import-readiness check.
+`implementations(format)` lists configured names, even when an optional
+dependency is absent.
 
 ## Development
 

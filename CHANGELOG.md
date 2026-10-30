@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+- CLI comparison adds opt-in --fail-on-diff: a completed mismatch exits 4 while
+  preserving the full JSON report on stdout. The default still exits 0 for any
+  completed comparison; a match exits 0 with either setting. Comparison errors
+  continue to exit 2 with no stdout report; parse validation exit 3 is unchanged.
+- Comparison now accepts --json-errors to emit the existing structured error
+  object on stderr, including when --fail-on-diff is enabled. Argument/usage
+  errors remain argparse text. Python comparison, report fields, canonical schema
+  1.1 and dependencies are unchanged.
+
+- Comparison now uses a unique internal missing-value sentinel, so a canonical
+  literal "<missing>" cannot suppress a difference for an absent path. Each
+  difference adds a per-implementation present boolean map. Absent values now
+  serialize as null with present=false; present null, empty text and literal
+  "<missing>" remain distinguishable. Consumers must use the presence flag to
+  interpret absence and tolerate the additive field. Original present values,
+  numeric monetary equality and default CLI exits are unchanged. Parse-result
+  schema remains 1.1; two-argument ComparisonDifference construction still works.
+
 - CAMT source guards now require exactly one valid CRDT/DBIT direction and
   booked amount for each entry/balance. Detail directions inherit only when
   absent; blank/duplicate/unknown directions and conflicting single-detail signs

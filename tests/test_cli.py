@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from bankparser.cli import _normalize_argv, build_parser, main
 from bankparser.errors import InputError
 
@@ -142,3 +144,157 @@ def test_compare_cli_passes_csv_options_to_both_implementations(tmp_path, capsys
     result = json.loads(capsys.readouterr().out)
     assert result["matches"] is True
     assert set(result["implementations"]) == {"native", "bankstatementparser"}
+
+
+# Exercise the real comparison pipeline through explicitly registered synthetic
+# adapters, so these CLI guarantees do not require optional installed backends.
+def _comparison_adapters(monkeypatch, mode="match", error=None):
+    from datetime import date
+    from decimal import Decimal
+
+    from bankparser import api
+    from bankparser.models import Account, Statement, Transaction
+    from bankparser.parsers.base import CanonicalData
+    from bankparser.parsers.registry import ParserRegistry
+
+    class Adapter:
+        format = "csv"
+        implementation_version = "1"
+
+        def __init__(self, identity):
+            self.id = identity
+
+        def parse(self, data, context):
+            if self.id == "two" and error is not None:
+                raise error
+            transactions = tuple(
+                Transaction(
+                    date(2026, 10, 1),
+                    date(2026, 10, 1),
+                    Decimal(amount),
+                    "GBP",
+                    reference=reference,
+                )
+                for amount, reference in [("10.00", "FIRST"), ("20.00", "SECOND")]
+            )
+            if self.id == "two":
+                from dataclasses import replace
+
+                if mode == "match":
+                    transactions = tuple(
+                        replace(t, amount=Decimal(str(t.amount) + "0"))
+                        for t in transactions
+                    )
+                elif mode == "amount":
+                    transactions = (
+                        replace(transactions[0], amount=Decimal("10.001")),
+                        transactions[1],
+                    )
+                elif mode == "reordered":
+                    transactions = transactions[::-1]
+            return CanonicalData(
+                Account(id="SYNTH", currency="GBP"), Statement(), transactions
+            )
+
+    registry = ParserRegistry()
+    for identity in ["one", "two"]:
+        registry.register(
+            format="csv",
+            implementation=identity,
+            factory=lambda identity=identity: Adapter(identity),
+            default=identity == "one",
+        )
+    monkeypatch.setattr(api, "_default_registry", lambda: registry)
+
+
+def _comparison_args(tmp_path):
+    path = tmp_path / "synthetic.csv"
+    path.write_text("Booking Date,Amount,Currency\n2026-10-01,10.00,GBP\n")
+    return ["compare", str(path), "--implementation", "one", "--implementation", "two"]
+
+
+@pytest.mark.parametrize("mode", ["match", "amount", "reordered"])
+@pytest.mark.parametrize("fail_on_diff", [False, True])
+@pytest.mark.parametrize("json_errors", [False, True])
+def test_compare_exit_status_and_complete_stdout_report(
+    monkeypatch, tmp_path, capsys, mode, fail_on_diff, json_errors
+):
+    _comparison_adapters(monkeypatch, mode)
+    args = _comparison_args(tmp_path)
+    if fail_on_diff:
+        args.append("--fail-on-diff")
+    if json_errors:
+        args.append("--json-errors")
+    assert main(args) == (4 if fail_on_diff and mode != "match" else 0)
+    captured = capsys.readouterr()
+    assert captured.err == ""
+    report = json.loads(captured.out)
+    assert report["matches"] is (mode == "match")
+    assert report["implementations"] == ["one", "two"]
+    differences = {d["path"]: d for d in report["differences"]}
+    if mode == "match":
+        assert differences == {}
+    else:
+        amount = differences["transactions[0].amount"]
+        assert amount["values"] == {
+            "one": "10.00",
+            "two": "10.001" if mode == "amount" else "20.00",
+        }
+        assert amount["present"] == {"one": True, "two": True}
+        if mode == "reordered":
+            assert differences["transactions[0].reference"]["values"] == {
+                "one": "FIRST",
+                "two": "SECOND",
+            }
+
+
+@pytest.mark.parametrize(
+    "kind", ["input", "selection", "parser", "dependency", "unknown", "options"]
+)
+@pytest.mark.parametrize("fail_on_diff", [False, True])
+@pytest.mark.parametrize("json_errors", [False, True])
+def test_compare_errors_take_precedence_and_use_stderr_only(
+    monkeypatch, tmp_path, capsys, kind, fail_on_diff, json_errors
+):
+    from bankparser.errors import ParseError, ParserDependencyError
+
+    error = None
+    expected_code = {
+        "input": "INPUT_ERROR",
+        "selection": "COMPARISON_ERROR",
+        "parser": "PARSE_ERROR",
+        "dependency": "MISSING_DEPENDENCY",
+        "unknown": "UNKNOWN_IMPLEMENTATION",
+        "options": "INPUT_ERROR",
+    }[kind]
+    if kind == "parser":
+        error = ParseError("synthetic parser failure", location="row[2]")
+    elif kind == "dependency":
+        error = ParserDependencyError("synthetic missing dependency")
+    _comparison_adapters(monkeypatch, error=error)
+    args = _comparison_args(tmp_path)
+    if kind == "input":
+        args[1] = str(tmp_path / "missing.csv")
+    elif kind == "selection":
+        args = args[:-2]
+    elif kind == "unknown":
+        args[-1] = "unknown"
+    elif kind == "options":
+        args += ["--decimal-separator", ".", "--grouping-separator", "."]
+    if fail_on_diff:
+        args.append("--fail-on-diff")
+    if json_errors:
+        args.append("--json-errors")
+    assert main(args) == 2
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    if json_errors:
+        output = json.loads(captured.err)
+        assert set(output) == {"error"}
+        assert output["error"]["code"] == expected_code
+        assert output["error"]["location"] == ("row[2]" if kind == "parser" else None)
+        assert output["error"]["message"]
+    else:
+        assert captured.err.startswith(f"bankparser: {expected_code}:")
+        if kind == "parser":
+            assert "(row[2])" in captured.err
