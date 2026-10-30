@@ -12,22 +12,25 @@ from bankparser import ParseError, parse
 from bankparser.parsers.camt053.bankstatementparser import _validate_source
 
 FIXTURE = Path("corpus/camt053/basic_valid.camt053.xml")
+SCHEMA_FIXTURES = Path(__file__).parent / "fixtures" / "camt053"
+BATCH_FIXTURE = SCHEMA_FIXTURES / "valid_batch.camt053.xml"
 backend = pytest.mark.skipif(
     importlib.util.find_spec("bankstatementparser") is None,
     reason="requires camt extra",
 )
 
 
-def document():
+def document(path=FIXTURE):
     # Strip only this synthetic fixture's namespace for convenient mutations.
-    root = E.fromstring(FIXTURE.read_bytes())
+    root = E.fromstring(path.read_bytes())
     for node in root.iter():
         node.tag = node.tag.split("}")[-1]
     root.set("xmlns", "urn:iso:std:iso:20022:tech:xsd:camt.053.001.02")
     return root
 
 
-def batch(root, index=0, amounts=("8.00", "10.75"), directions=(None, None)):
+def extension_batch(root, index=0, amounts=("8.00", "10.75"), directions=(None, None)):
+    # Nonstandard direct TxDtls/Amt and TxDtls/CdtDbtInd extensions.
     entry = root.findall(".//Stmt/Ntry")[index]
     parent = entry.find("NtryDtls")
     template = deepcopy(parent.find("TxDtls"))
@@ -40,6 +43,16 @@ def batch(root, index=0, amounts=("8.00", "10.75"), directions=(None, None)):
             E.SubElement(detail, "CdtDbtInd").text = direction
         parent.append(detail)
     return entry
+
+
+def assert_schema_valid(xml):
+    etree = pytest.importorskip("lxml.etree")
+    schema = etree.XMLSchema(etree.parse(str(SCHEMA_FIXTURES / "camt.053.001.02.xsd")))
+    schema.assertValid(etree.fromstring(xml))
+
+
+def test_standard_batch_fixture_is_schema_valid():
+    assert_schema_valid(BATCH_FIXTURE.read_bytes())
 
 
 def rejected(root, code, location):
@@ -110,7 +123,7 @@ def test_single_detail_direction_conflict():
 @pytest.mark.parametrize("balances", [False, True])
 def test_bad_batch_rejected_without_relying_on_statement_balances(balances):
     root = document()
-    batch(root, amounts=("8", "9"))
+    extension_batch(root, amounts=("8", "9"))
     if not balances:
         statement = root.find(".//Stmt")
         for bal in statement.findall("Bal"):
@@ -120,8 +133,8 @@ def test_bad_batch_rejected_without_relying_on_statement_balances(balances):
 
 def test_offsetting_bad_batches_cannot_hide_in_global_reconciliation():
     root = document()
-    batch(root, 0, amounts=("8", "11.75"))  # Debit overstated by one.
-    batch(root, 1, amounts=("40", "41"))  # Credit overstated by one.
+    extension_batch(root, 0, amounts=("8", "11.75"))  # Debit overstated by one.
+    extension_batch(root, 1, amounts=("40", "41"))  # Credit overstated by one.
     rejected(root, "CAMT_BATCH_TOTAL_MISMATCH", "Stmt/Ntry[1]")
 
 
@@ -131,7 +144,7 @@ def test_offsetting_bad_batches_cannot_hide_in_global_reconciliation():
 )
 def test_duplicate_detail_amount_is_never_silently_selected(path):
     root = document()
-    entry = batch(root)
+    entry = extension_batch(root)
     detail = entry.find("NtryDtls/TxDtls")
     if path != "Amt":
         parent = detail
@@ -149,7 +162,7 @@ def test_duplicate_detail_amount_is_never_silently_selected(path):
 @pytest.mark.parametrize("kind", ["missing", "foreign", "instructed", "conflicting"])
 def test_batch_requires_unambiguous_booked_currency_amount(kind):
     root = document()
-    entry = batch(root)
+    entry = extension_batch(root)
     detail = entry.find("NtryDtls/TxDtls")
     amount = detail.find("Amt")
     if kind == "missing":
@@ -168,31 +181,44 @@ def test_batch_requires_unambiguous_booked_currency_amount(kind):
 
 @backend
 @pytest.mark.parametrize(
-    "direction,amounts,expected",
+    "direction,amounts,expected,closing",
     [
-        ("DBIT", ("8", "10.75"), [Decimal(-8), Decimal("-10.75")]),
-        ("CRDT", ("8", "10.75"), [Decimal(8), Decimal("10.75")]),
-        ("DBIT", ("0", "0"), [Decimal(0), Decimal(0)]),
+        ("DBIT", ("8", "10.75"), [Decimal(-8), Decimal("-10.75")], "561.25"),
+        ("CRDT", ("8", "10.75"), [Decimal(8), Decimal("10.75")], "598.75"),
+        ("DBIT", ("0", "0"), [Decimal(0), Decimal(0)], "580.00"),
     ],
 )
 @pytest.mark.parametrize("reversal", [False, True])
-def test_valid_batch_signs_zeros_and_reversals(direction, amounts, expected, reversal):
-    root = document()
-    entry = batch(root, amounts=amounts)
+@pytest.mark.parametrize("amount_kind", ["TxAmt", "CntrValAmt"])
+def test_valid_batch_signs_zeros_and_reversals(
+    direction, amounts, expected, closing, reversal, amount_kind
+):
+    root = document(BATCH_FIXTURE)
+    entry = root.find(".//Stmt/Ntry")
+    for detail, amount in zip(entry.findall("NtryDtls/TxDtls"), amounts):
+        container = detail.find("AmtDtls/TxAmt")
+        container.tag = amount_kind
+        container.find("Amt").text = amount
     entry.find("CdtDbtInd").text = direction
     if amounts == ("0", "0"):
         entry.find("Amt").text = "0"
-    E.SubElement(entry, "RvslInd").text = str(reversal).lower()
-    result = parse(E.tostring(root))
+    entry.find("RvslInd").text = str(reversal).lower()
+    root.findall(".//Stmt/Bal")[1].find("Amt").text = closing
+    # Validate the actual input, including every sign/zero/reversal variant.
+    xml = E.tostring(root)
+    assert_schema_valid(xml)
+    result = parse(xml)
     assert [t.amount for t in result.transactions[:2]] == expected
     assert [t.currency for t in result.transactions] == ["GBP"] * 3
     assert [t.reference for t in result.transactions[:2]] == ["BATCH-0-0", "BATCH-0-1"]
+    assert result.statement.closing_balance == Decimal(closing)
+    assert result.validation.status == "passed"
 
 
 @backend
-def test_mixed_direction_batch_conserves_signed_not_unsigned_amounts():
+def test_extension_mixed_direction_batch_conserves_signed_not_unsigned_amounts():
     root = document()
-    batch(root, amounts=("20", "1.25"), directions=("DBIT", "CRDT"))
+    extension_batch(root, amounts=("20", "1.25"), directions=("DBIT", "CRDT"))
     result = parse(E.tostring(root))
     assert [t.amount for t in result.transactions] == [
         Decimal(-20),
@@ -203,9 +229,9 @@ def test_mixed_direction_batch_conserves_signed_not_unsigned_amounts():
 
 
 @backend
-def test_foreign_and_instructed_amounts_are_separate_from_booked_amounts():
+def test_extension_foreign_and_instructed_amounts_are_separate_from_booked_amounts():
     root = document()
-    entry = batch(root)
+    entry = extension_batch(root)
     detail = entry.find("NtryDtls/TxDtls")
     detail.remove(detail.find("Amt"))
     amounts = E.SubElement(detail, "AmtDtls")
@@ -231,9 +257,9 @@ def test_foreign_and_instructed_amounts_are_separate_from_booked_amounts():
 
 
 @backend
-def test_batch_arithmetic_is_exact_with_hostile_caller_context():
+def test_extension_batch_arithmetic_is_exact_with_hostile_caller_context():
     root = document()
-    entry = batch(
+    entry = extension_batch(
         root, amounts=("123456789012345678901234567890.123456789", "0.000000001")
     )
     entry.find("Amt").text = "123456789012345678901234567890.123456790"
@@ -268,7 +294,7 @@ def test_invalid_balance_direction_rejected_before_backend_extraction(monkeypatc
 )
 def test_duplicate_amount_containers_are_rejected(path):
     root = document()
-    detail = batch(root).find("NtryDtls/TxDtls")
+    detail = extension_batch(root).find("NtryDtls/TxDtls")
     parent = detail
     for name in path.split("/")[:-1]:
         parent = E.SubElement(parent, name)
@@ -282,7 +308,7 @@ def test_duplicate_amount_containers_are_rejected(path):
 @pytest.mark.parametrize("kind", ["TxAmt", "CntrValAmt", "InstdAmt"])
 def test_present_amount_container_requires_amount(kind):
     root = document()
-    detail = batch(root).find("NtryDtls/TxDtls")
+    detail = extension_batch(root).find("NtryDtls/TxDtls")
     E.SubElement(E.SubElement(detail, "AmtDtls"), kind)
     rejected(
         root,
@@ -307,7 +333,7 @@ def test_batch_checks_run_before_backend_extraction(monkeypatch, balances):
     from bankstatementparser.camt_parser import CamtParser
 
     root = document()
-    batch(root, amounts=("8", "9"))
+    extension_batch(root, amounts=("8", "9"))
     if not balances:
         statement = root.find(".//Stmt")
         for bal in statement.findall("Bal"):
@@ -324,9 +350,9 @@ def test_batch_checks_run_before_backend_extraction(monkeypatch, balances):
 
 
 @backend
-def test_valid_batch_without_balances_remains_parseable():
+def test_extension_valid_batch_without_balances_remains_parseable():
     root = document()
-    batch(root)
+    extension_batch(root)
     statement = root.find(".//Stmt")
     for bal in statement.findall("Bal"):
         statement.remove(bal)
@@ -358,9 +384,9 @@ def test_single_detail_keeps_entry_amount_and_separate_foreign_metadata():
 
 
 @backend
-def test_equal_amount_candidates_with_different_scales_are_unambiguous():
+def test_extension_equal_amount_candidates_with_different_scales_are_unambiguous():
     root = document()
-    detail = batch(root).find("NtryDtls/TxDtls")
+    detail = extension_batch(root).find("NtryDtls/TxDtls")
     amounts = E.SubElement(detail, "AmtDtls")
     E.SubElement(E.SubElement(amounts, "CntrValAmt"), "Amt", Ccy="GBP").text = "8.000"
     assert parse(E.tostring(root)).validation.status == "passed"
@@ -380,11 +406,11 @@ def test_debit_balances_remain_negative_and_are_not_reversed_twice():
 
 
 @backend
-def test_source_amount_metadata_serializes_as_exact_decimal_strings():
+def test_extension_source_amount_metadata_serializes_as_exact_decimal_strings():
     from bankparser.serialization import to_primitive
 
     root = document()
-    batch(root)
+    extension_batch(root)
     raw = to_primitive(parse(E.tostring(root)))["transactions"][0]["raw"]
     assert raw["entry_amount"] == "18.75"
     assert raw["amount_details"][0] == {

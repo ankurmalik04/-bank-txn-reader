@@ -29,7 +29,8 @@
 - Explicit destination account confirmation supplies import context without
   populating source account/currency fields; known identity/currency conflicts
   block. Repeated IDs/similar records remain intact and visible for review, with
-  optional review tokens bound to the canonical result rather than file bytes.
+  optional review tokens bound to the canonical result, full resolved policy and
+  destination context. Earlier canonical-only tokens require fresh review.
 - Added `bankparser assess` with full JSON output and exits 0/5/6 for
   ready/review/not-ready, 2 for errors. Existing parse/compare output and exits
   are unchanged. Policy/assessment schemas, synthetic examples and guidance ship

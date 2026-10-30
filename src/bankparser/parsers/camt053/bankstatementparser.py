@@ -176,9 +176,9 @@ def _map_transaction(
         role = "creditor" if role == "debtor" else "debtor"
 
     end_to_end_id = _meaningful_reference(record.get("EndToEndId"))
-    account_servicer_reference = _text(record.get("AcctSvcrRef")) or source.get(
-        "account_servicer_reference"
-    )
+    account_servicer_reference = _meaningful_reference(
+        record.get("AcctSvcrRef")
+    ) or _meaningful_reference(source.get("account_servicer_reference"))
     reference = _first_not_none(
         end_to_end_id,
         _text(record.get("Reference")),
@@ -349,9 +349,9 @@ def _source_transactions(statement: Any) -> list[dict[str, Any]]:
                 or _element_text(detail, "./AddtlTxInf")
                 or _element_text(entry, "./AddtlNtryInf"),
                 "account_servicer_reference": _first_not_none(
-                    _element_text(detail, "./Refs/AcctSvcrRef"),
-                    _element_text(detail, "./AcctSvcrRef"),
-                    _element_text(entry, "./AcctSvcrRef"),
+                    _meaningful_reference(_element_text(detail, "./Refs/AcctSvcrRef")),
+                    _meaningful_reference(_element_text(detail, "./AcctSvcrRef")),
+                    _meaningful_reference(_element_text(entry, "./AcctSvcrRef")),
                 ),
                 "structured_references": tuple(
                     node.text.strip()
@@ -490,6 +490,15 @@ def _verify_alignment(
     sources: list[dict[str, Any]], records: list[dict[str, Any]]
 ) -> None:
     source_keys = [_alignment_key(source["_alignment"]) for source in sources]
+    # Financial identity/order must agree for every row before considering
+    # whether repeated identities can safely share enrichment metadata.
+    for index, (expected, record) in enumerate(zip(source_keys, records)):
+        if expected != _alignment_key(record):
+            raise ParseError(
+                "CAMT backend identity, financial fields or order differ from source",
+                code="TRANSACTION_ALIGNMENT_MISMATCH",
+                location=sources[index]["source_path"],
+            )
     groups: dict[tuple[Any, ...], list[int]] = {}
     for index, key in enumerate(source_keys):
         groups.setdefault(key, []).append(index)
@@ -508,13 +517,6 @@ def _verify_alignment(
                 "Repeated CAMT identities have conflicting enrichment metadata",
                 code="AMBIGUOUS_TRANSACTION_ALIGNMENT",
                 location=sources[first]["source_path"],
-            )
-    for index, (expected, record) in enumerate(zip(source_keys, records), start=1):
-        if expected != _alignment_key(record):
-            raise ParseError(
-                "CAMT backend identity, financial fields or order differ from source",
-                code="TRANSACTION_ALIGNMENT_MISMATCH",
-                location=sources[index - 1]["source_path"],
             )
 
 
