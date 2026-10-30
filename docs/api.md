@@ -172,7 +172,8 @@ returns a separate ImportAssessment with ready/review/not-ready status and
 structured reasons. ImportPolicy declares destination requirements; optional
 DestinationAccount supplies explicitly confirmed import context without changing
 source facts. Failed recorded or recomputed validation always blocks. Candidate
-repeats are reported, never removed; reviews bind to a canonical result digest.
+repeats are reported, never removed; reviews bind to a canonical result digest,
+the full resolved policy and destination context.
 
 Use load_import_policy(path) for bounded data-only v1 JSON policies, or construct
 ImportPolicy directly. The new `bankparser assess` command emits the report with
