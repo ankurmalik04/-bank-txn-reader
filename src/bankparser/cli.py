@@ -10,7 +10,7 @@ from typing import Any, NoReturn
 
 from bankparser.api import implementations, parse
 from bankparser.comparison import compare
-from bankparser.diagnostics import diagnostic_for_error, diagnostics_for
+from bankparser.diagnostics import Diagnostic, diagnostic_for_error, diagnostics_for
 from bankparser.errors import BankParserError, InputError
 from bankparser.options import CsvOptions
 from bankparser.profiles import load_csv_profile
@@ -272,7 +272,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
     except BankParserError as exc:
         if getattr(args, "output_policy", "full") == "redacted-diagnostic":
-            _print_redacted_error(exc.code, getattr(args, "json_errors", False))
+            _print_redacted_error(
+                exc.code,
+                getattr(args, "json_errors", False),
+                diagnostic=diagnostic_for_error(exc),
+            )
         elif getattr(args, "json_errors", False):
             diagnostic = diagnostic_for_error(exc)
             print(
@@ -296,10 +300,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 2
 
 
-def _print_redacted_error(code: str, json_errors: bool) -> None:
+def _print_redacted_error(
+    code: str, json_errors: bool, *, diagnostic: Diagnostic | None = None
+) -> None:
     safe_code = _safe_code(code)
     if json_errors:
-        print(json.dumps({"error": {"code": safe_code}}), file=sys.stderr)
+        error: dict[str, Any] = {"code": safe_code}
+        if diagnostic is not None:
+            error["diagnostic"] = to_primitive(diagnostic, policy="redacted-diagnostic")
+        print(json.dumps({"error": error}), file=sys.stderr)
     else:
         print(f"bankparser: {safe_code}", file=sys.stderr)
 

@@ -97,7 +97,18 @@ def test_redacted_json_errors_omit_message_and_location(capsys, tmp_path):
     captured = capsys.readouterr()
     assert captured.out == ""
     assert "PRIVATE_MARKER_829174" not in captured.err
-    assert json.loads(captured.err) == {"error": {"code": "INPUT_ERROR"}}
+    assert json.loads(captured.err) == {
+        "error": {
+            "code": "INPUT_ERROR",
+            "diagnostic": {
+                "diagnostic_schema_version": "1",
+                "code": "INPUT_ERROR",
+                "severity": "error",
+                "format": None,
+                "canonical_field": None,
+            },
+        }
+    }
 
 
 def test_canonical_cli_policy_omits_raw_but_keeps_canonical_fields(capsys):
@@ -403,7 +414,18 @@ def test_custom_exception_codes_are_sanitized_only_in_redacted_mode(
     if policy == "redacted-diagnostic":
         assert marker not in output.err
         if json_errors:
-            assert json.loads(output.err) == {"error": {"code": "UNKNOWN_CODE"}}
+            assert json.loads(output.err) == {
+                "error": {
+                    "code": "UNKNOWN_CODE",
+                    "diagnostic": {
+                        "diagnostic_schema_version": "1",
+                        "code": "UNKNOWN_CODE",
+                        "severity": "error",
+                        "format": None,
+                        "canonical_field": None,
+                    },
+                }
+            }
         else:
             assert output.err == "bankparser: UNKNOWN_CODE\n"
     else:

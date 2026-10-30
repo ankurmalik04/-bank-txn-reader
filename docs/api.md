@@ -273,6 +273,13 @@ the existing checks aggregate repeated issues. The legacy `location` and
 validation message fields remain unchanged. Expected/actual values can contain
 financial data under full serialization.
 
+When transaction dates are present and within the known bounds but a statement
+period bound is missing, the date diagnostic points to `statement.start_date` or
+`statement.end_date`. If both are missing, it points to `statement` and guidance
+names both required bounds. No transaction indices or source locations are
+reported for this statement-level prerequisite. Missing/out-of-range transaction
+dates retain their transaction field and affected-record context.
+
 The parse CLI accepts `--include-diagnostics` to add structured warnings and
 non-passing checks to its output. Structured errors are included under the
 existing `error` object when `--json-errors` is enabled. The existing
@@ -280,6 +287,10 @@ existing `error` object when `--json-errors` is enabled. The existing
 diagnostic-only validation metadata is available through `diagnostics_for`.
 `redacted-diagnostic` output omits messages, values, indices and source locations,
 while retaining allowlisted code, severity, format and canonical field.
+Redacted `--json-errors` responses include that safe projection under
+`error.diagnostic` and retain the existing top-level `error.code`. They omit the
+message, location, guidance, record indices and expected/actual values. CLI usage
+errors retain the code-only `CLI_USAGE_ERROR` response described below.
 
 Use `bankparser.serialization.to_primitive(value)` before JSON serialization.
 Amounts become strings, dates become ISO strings, and tuples become lists.
@@ -288,7 +299,9 @@ The optional `policy` keyword selects `full` (the unchanged default), `canonical
 `redacted-diagnostic`. The redacted diagnostic is a strict summary allowlist:
 format, validation status/check codes, warning codes, transaction count,
 comparison match/difference counts, and readiness status/reason codes/counts.
-For `Diagnostic` values it also retains severity and the canonical field name.
+For `Diagnostic` values it also retains severity and known canonical field names.
+Unknown/custom canonical fields are replaced with null, even if they look like
+valid paths, so identifiers cannot be passed through as field names.
 Diagnostic codes come from a fixed registry of built-in codes; unrecognised
 values, including custom warning/check/reason codes, become `UNKNOWN_CODE`.
 It omits free text, amounts, dates, IDs, names, references, paths, raw values,
@@ -300,7 +313,7 @@ The `parse`, `compare` and `assess` CLI commands accept the same
 `--output-policy {full,canonical,redacted-diagnostic}` option. Full output stays
 the default. With the redacted policy, parse/compare/assess errors suppress
 message and location text and sanitize exception codes through the same registry;
-`--json-errors` emits only the structured error code.
+`--json-errors` emits the safe structured error code and diagnostic projection.
 
 A redacted output request is detected before argument parsing, including the
 `--output-policy=redacted-diagnostic` syntax and argparse option abbreviations.

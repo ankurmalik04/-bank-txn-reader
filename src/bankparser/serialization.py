@@ -249,7 +249,38 @@ def _safe_version(value: Any) -> str | None:
     return value if re.fullmatch(r"[0-9]+(?:\.[0-9A-Za-z.+-]+)*", value) else None
 
 
+_CANONICAL_FIELDS = frozenset(
+    {
+        "account",
+        "account.id",
+        "account.iban",
+        "account.currency",
+        "statement",
+        "statement.id",
+        "statement.sequence",
+        "statement.start_date",
+        "statement.end_date",
+        "statement.opening_balance",
+        "statement.closing_balance",
+        "statement.opening_balance_currency",
+        "statement.closing_balance_currency",
+        "transactions",
+        "transactions.booking_date",
+        "transactions.value_date",
+        "transactions.amount",
+        "transactions.currency",
+        "transactions.description",
+        "transactions.reference",
+        "transactions.transaction_id",
+        "transactions.counterparty",
+        "transactions.counterparty.name",
+        "transactions.counterparty.account_id",
+        "transactions.counterparty.iban",
+        "transactions.raw",
+    }
+)
+
+
 def _safe_field(value: Any) -> str | None:
-    if not isinstance(value, str) or len(value) > 80:
-        return None
-    return value if re.fullmatch(r"[a-z][a-z0-9_.]*", value) else None
+    # A syntactically valid path can itself contain a private identifier.
+    return value if isinstance(value, str) and value in _CANONICAL_FIELDS else None
