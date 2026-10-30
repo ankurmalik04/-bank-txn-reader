@@ -3,7 +3,9 @@
 import hashlib
 import importlib.util
 import json
+import os
 import runpy
+import stat
 from copy import deepcopy
 from decimal import Inexact, localcontext
 from pathlib import Path
@@ -412,6 +414,39 @@ def test_cli_outputs_and_exit_codes(sample, tmp_path, capsys, outcome, exit_code
     rendered = md.read_text()
     assert "INDEPENDENT_REVIEW" in rendered and "skipped" in rendered
     assert "SHA-256" in rendered and "No bank/profile certification" in rendered
+
+
+@pytest.mark.skipif(os.name != "posix", reason="requires POSIX permission bits")
+@pytest.mark.parametrize("mask", [0o022, 0o000])
+def test_report_files_are_owner_only(sample, tmp_path, mask):
+    output, md = tmp_path / "report.json", tmp_path / "report.md"
+    previous = os.umask(mask)
+    try:
+        assert main([str(sample), "--json", str(output), "--markdown", str(md)]) == 0
+    finally:
+        os.umask(previous)
+    for path in (output, md):
+        assert stat.S_IMODE(path.stat().st_mode) == 0o600
+
+
+@pytest.mark.parametrize("option", ["--json", "--markdown"])
+def test_report_creation_remains_exclusive_after_preflight(
+    sample, tmp_path, capsys, monkeypatch, option
+):
+    output = tmp_path / "report"
+
+    def raced_run(manifest):
+        report = run(manifest)
+        output.write_text("concurrent evidence")
+        return report
+
+    monkeypatch.setitem(globals_, "run", raced_run)
+    assert main([str(sample), option, str(output)]) == 2
+    assert output.read_text() == "concurrent evidence"
+    assert (
+        json.loads(capsys.readouterr().err)["error"]["code"]
+        == "CONFORMANCE_INPUT_ERROR"
+    )
 
 
 def test_stdout_json_and_invalid_manifest_stderr(sample, capsys):
