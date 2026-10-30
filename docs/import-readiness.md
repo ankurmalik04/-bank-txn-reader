@@ -141,19 +141,32 @@ can overlap; each unreviewed group is assessed separately. Identical index group
 prefer the transaction-id label.
 
 ```python
-first = assess_import(parsed)
+first = assess_import(parsed, policy, destination=destination)
 # After reviewing the actual group and destination requirements:
 reviewed = (first.duplicate_candidates[0].fingerprint,)
-second = assess_import(parsed, reviewed_duplicates=reviewed)
+second = assess_import(
+    parsed, policy, destination=destination, reviewed_duplicates=reviewed
+)
 ```
 
 The result_fingerprint hashes a deterministic canonical projection of schema,
 format, account, statement and ordered transactions, excluding raw fields,
 backend provenance, warnings and recorded validation. Each candidate fingerprint
-binds its kind and indices to that entire result fingerprint. A change anywhere
-in the canonical result invalidates review tokens. Tokens are not a source-file
-hash, authentication, anonymity, proof that review occurred or import-history
-state. An identical canonical result can reuse a token even from different bytes.
+binds its kind and indices to that entire result fingerprint, the full resolved
+policy (including id, version and all settings) and the full destination context
+(including id, currency, expected source identities and mapping confirmation).
+A change in any of these invalidates review tokens. An omitted destination is a
+distinct scope: its tokens cannot be used with a supplied destination or vice
+versa. Supply a stable destination ID for destination-specific reviews, and bump
+the policy version when external review requirements change. Requirements not
+represented in these inputs cannot be bound by the library.
+
+Tokens are not a source-file hash, authentication, anonymity, proof that review
+occurred or import-history state. An identical canonical result can reuse a token
+from different bytes only with the same resolved policy and destination context.
+The token derivation is version 2; earlier canonical-only tokens are rejected and
+require a fresh review. Policy/assessment JSON shapes and schema versions remain
+unchanged.
 Caller review is explicitly declared; it does not override failed validation or
 other unmet policy requirements. Unknown/stale/duplicate tokens are input errors.
 
@@ -185,7 +198,9 @@ id. Repeat --reviewed-duplicate FINGERPRINT for explicitly reviewed groups.
 Completed assessments always emit full JSON on stdout, including exits 5/6,
 with empty stderr. Errors emit no assessment stdout; --json-errors uses the
 existing structured error object on stderr. Argument/usage errors remain
-argparse text. Parse validation exit 3 and comparison mismatch exit 4 are unchanged.
+argparse text unless `--output-policy redacted-diagnostic` is requested; then
+only `CLI_USAGE_ERROR` is emitted (as a code-only object with `--json-errors`).
+Parse validation exit 3 and comparison mismatch exit 4 are unchanged.
 There is no import/ledger write operation.
 
 Python reports use the existing `to_primitive` before json.dumps. The separate

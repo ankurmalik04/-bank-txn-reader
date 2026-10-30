@@ -101,8 +101,24 @@ def _transaction_date_check(
     source_locations = tuple(
         _transaction_source_location(transactions[index]) for index in affected
     )
-    relevant_field = field_name if affected or start is None or end is None else None
-    relevant_guidance = guidance if relevant_field else None
+    relevant_field = field_name if affected else None
+    relevant_guidance = guidance if affected else None
+    if not affected and (start is None or end is None):
+        missing_bounds = tuple(
+            name
+            for name, value in (("start_date", start), ("end_date", end))
+            if value is None
+        )
+        relevant_field = (
+            "statement"
+            if len(missing_bounds) == 2
+            else f"statement.{missing_bounds[0]}"
+        )
+        relevant_guidance = (
+            "Supply the missing statement reporting-period bounds from the source: "
+            + " and ".join(f"statement.{name}" for name in missing_bounds)
+            + "."
+        )
     if outside:
         return ValidationCheck(
             code,

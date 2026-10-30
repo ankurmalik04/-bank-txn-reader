@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from copy import deepcopy
 from dataclasses import fields, replace
@@ -415,6 +416,98 @@ def test_duplicate_policy_never_deletes_candidates_or_transactions(action, statu
     assert len(parsed.transactions) == 2
 
 
+@pytest.mark.parametrize("distinct_ids", [False, True])
+@pytest.mark.parametrize(
+    "destination,policy",
+    [
+        (DestinationAccount("ledger-B", mapping_confirmed=True), ImportPolicy()),
+        (None, ImportPolicy()),
+        (DestinationAccount("ledger-A", "GBP", mapping_confirmed=True), ImportPolicy()),
+        (
+            DestinationAccount(
+                "ledger-A", source_account_id="SOURCE-A", mapping_confirmed=True
+            ),
+            ImportPolicy(),
+        ),
+        (
+            DestinationAccount(
+                "ledger-A", source_iban="EXPECTED", mapping_confirmed=True
+            ),
+            ImportPolicy(),
+        ),
+        (DestinationAccount("ledger-A"), ImportPolicy()),
+        (
+            DestinationAccount("ledger-A", mapping_confirmed=True),
+            ImportPolicy(id="other"),
+        ),
+        (
+            DestinationAccount("ledger-A", mapping_confirmed=True),
+            ImportPolicy(version="2"),
+        ),
+        (
+            DestinationAccount("ledger-A", mapping_confirmed=True),
+            ImportPolicy(duplicate_candidates="block"),
+        ),
+        (
+            DestinationAccount("ledger-A", mapping_confirmed=True),
+            ImportPolicy(description="block"),
+        ),
+    ],
+)
+def test_duplicate_review_cannot_cross_destination_or_policy(
+    distinct_ids, destination, policy
+):
+    parsed = duplicate_result(distinct_ids)
+    original_destination = DestinationAccount("ledger-A", mapping_confirmed=True)
+    first = assess_import(parsed, destination=original_destination)
+    tokens = tuple(c.fingerprint for c in first.duplicate_candidates)
+    approved = assess_import(
+        deepcopy(parsed),
+        ImportPolicy(),
+        destination=deepcopy(original_destination),
+        reviewed_duplicates=tokens,
+    )
+    assert approved.status == "ready"
+    changed = assess_import(parsed, policy, destination=destination)
+    assert changed.result_fingerprint == first.result_fingerprint
+    assert not any(c.reviewed for c in changed.duplicate_candidates)
+    with pytest.raises(InputError, match="does not apply"):
+        assess_import(
+            parsed, policy, destination=destination, reviewed_duplicates=tokens
+        )
+
+
+def test_review_without_destination_cannot_authorize_a_destination():
+    parsed = duplicate_result()
+    token = assess_import(parsed).duplicate_candidates[0].fingerprint
+    with pytest.raises(InputError, match="does not apply"):
+        assess_import(
+            parsed,
+            destination=DestinationAccount("ledger-A", mapping_confirmed=True),
+            reviewed_duplicates=(token,),
+        )
+
+
+def test_legacy_canonical_only_review_requires_fresh_review():
+    parsed = duplicate_result()
+    assessment = assess_import(parsed)
+    candidate = assessment.duplicate_candidates[0]
+    legacy_token = hashlib.sha256(
+        json.dumps(
+            {
+                "version": "1",
+                "result": assessment.result_fingerprint,
+                "kind": candidate.kind,
+                "indices": candidate.transaction_indices,
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
+    with pytest.raises(InputError, match="does not apply"):
+        assess_import(parsed, reviewed_duplicates=(legacy_token,))
+
+
 def test_review_is_per_group_and_overlapping_groups_remain_visible():
     parsed = result()
     tx = parsed.transactions[0]
@@ -713,6 +806,34 @@ def test_cli_policy_and_profile_options_have_real_pipeline_parity(tmp_path, caps
     ]
     assert main(args) == 0
     assert json.loads(capsys.readouterr().out)["status"] == "ready"
+
+
+def test_cli_duplicate_review_cannot_cross_destinations(tmp_path, capsys):
+    source = tmp_path / "repeat.csv"
+    source.write_text(
+        "Booking Date,Amount,Currency,Account,ID\n"
+        "2026-10-01,1,GBP,SOURCE-A,SAME\n2026-10-01,1,GBP,SOURCE-A,SAME\n"
+    )
+    args = ["assess", str(source), "--confirm-account-mapping", "--json-errors"]
+    ledger_a = [*args, "--destination-account", "ledger-A"]
+    ledger_b = [*args, "--destination-account", "ledger-B"]
+    assert main(ledger_a) == 5
+    first = json.loads(capsys.readouterr().out)
+    token = first["duplicate_candidates"][0]["fingerprint"]
+    assert main([*ledger_a, "--reviewed-duplicate", token]) == 0
+    assert json.loads(capsys.readouterr().out)["status"] == "ready"
+    assert main([*ledger_b, "--reviewed-duplicate", token]) == 2
+    output = capsys.readouterr()
+    assert output.out == ""
+    assert json.loads(output.err)["error"]["code"] == "INPUT_ERROR"
+    assert main(ledger_b) == 5
+    second = json.loads(capsys.readouterr().out)
+    assert second["result_fingerprint"] == first["result_fingerprint"]
+    candidate = second["duplicate_candidates"][0]
+    assert candidate["reviewed"] is False
+    assert main([*ledger_b, "--reviewed-duplicate", candidate["fingerprint"]]) == 0
+    assert json.loads(capsys.readouterr().out)["status"] == "ready"
+    assert len(parse(source).transactions) == 2
 
 
 def test_cli_duplicate_review_is_explicit_and_preserves_every_record(tmp_path, capsys):

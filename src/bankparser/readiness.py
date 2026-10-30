@@ -242,7 +242,10 @@ def _fingerprint(value: Any) -> str:
 
 
 def _duplicates(
-    result: ParseResult, fingerprint: str
+    result: ParseResult,
+    fingerprint: str,
+    policy: ImportPolicy,
+    destination: DestinationAccount | None,
 ) -> tuple[DuplicateCandidate, ...]:
     ids: dict[str, list[int]] = {}
     signatures: dict[tuple[Any, ...], list[int]] = {}
@@ -276,8 +279,10 @@ def _duplicates(
             indices,
             _fingerprint(
                 {
-                    "version": "1",
+                    "version": "2",
                     "result": fingerprint,
+                    "policy": policy,
+                    "destination": destination,
                     "kind": kind,
                     "indices": indices,
                 }
@@ -362,7 +367,8 @@ def assess_import(
     """Assess existing canonical data; never mutate, fill, delete or import it.
 
     Failed recorded and freshly recomputed checks always block. Duplicate review
-    fingerprints bind to this whole canonical result, not original file bytes.
+    fingerprints bind to this whole canonical result, resolved policy and
+    destination context, not original file bytes.
     """
     if not isinstance(result, ParseResult) or (
         policy is not None and not isinstance(policy, ImportPolicy)
@@ -413,12 +419,13 @@ def assess_import(
             ],
         }
         fingerprint = _fingerprint(canonical)
-        candidates = _duplicates(result, fingerprint)
+        candidates = _duplicates(result, fingerprint, policy, destination)
     except (TypeError, AttributeError, ValueError) as exc:
         raise InputError("Invalid canonical field types in import assessment") from exc
     if set(reviewed_duplicates) - {c.fingerprint for c in candidates}:
         raise InputError(
-            "Duplicate review token does not apply to this canonical result"
+            "Duplicate review token does not apply to this canonical result, "
+            "policy or destination context"
         )
     candidates = tuple(
         replace(c, reviewed=c.fingerprint in reviewed_duplicates) for c in candidates

@@ -19,6 +19,10 @@
   structured indices and locations rather than requiring message parsing.
   `parse --include-diagnostics` opts into a diagnostic array, and `--json-errors`
   adds a versioned diagnostic while preserving the existing error fields.
+  Missing statement-period prerequisites now point to the missing statement
+  bounds rather than asking for transaction dates that are already present.
+  Redacted JSON errors include the safe diagnostic projection alongside the
+  existing error code; unknown canonical-field names are omitted as null.
   Default serialized parse output is unchanged; privacy policies filter the new
   fields according to their existing rules. Two diagnostic JSON schemas ship.
 - Serialization now accepts `policy="full"|"canonical"|"redacted-diagnostic"`.
@@ -26,8 +30,11 @@
   still expose sensitive canonical values. Redacted diagnostics use a strict
   structural allowlist and omit messages, values, identifiers, paths and
   fingerprints. The parse/compare/assess CLI commands accept the matching
-  `--output-policy`; redacted CLI errors omit message and location. This reduces
-  exposure but does not promise anonymity, and no input objects are mutated.
+  `--output-policy`; redacted CLI errors omit message and location. A fixed
+  built-in code registry replaces unrecognised codes with UNKNOWN_CODE, including
+  custom exceptions. Redacted CLI usage errors emit only CLI_USAGE_ERROR instead
+  of echoing invalid arguments, including failures before the policy flag. This
+  reduces exposure but does not promise anonymity, and no input objects are mutated.
 - CAMT now accepts repeated financial alignment keys only when every source
   enrichment field is semantically identical across the repeated records and
   the backend fields used as enrichment fallbacks also agree. Source provenance
@@ -45,7 +52,8 @@
 - Explicit destination account confirmation supplies import context without
   populating source account/currency fields; known identity/currency conflicts
   block. Repeated IDs/similar records remain intact and visible for review, with
-  optional review tokens bound to the canonical result rather than file bytes.
+  optional review tokens bound to the canonical result, full resolved policy and
+  destination context. Earlier canonical-only tokens require fresh review.
 - Added `bankparser assess` with full JSON output and exits 0/5/6 for
   ready/review/not-ready, 2 for errors. Existing parse/compare output and exits
   are unchanged. Policy/assessment schemas, synthetic examples and guidance ship

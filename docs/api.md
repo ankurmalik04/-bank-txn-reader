@@ -172,7 +172,8 @@ returns a separate ImportAssessment with ready/review/not-ready status and
 structured reasons. ImportPolicy declares destination requirements; optional
 DestinationAccount supplies explicitly confirmed import context without changing
 source facts. Failed recorded or recomputed validation always blocks. Candidate
-repeats are reported, never removed; reviews bind to a canonical result digest.
+repeats are reported, never removed; reviews bind to a canonical result digest,
+the full resolved policy and destination context.
 
 Use load_import_policy(path) for bounded data-only v1 JSON policies, or construct
 ImportPolicy directly. The new `bankparser assess` command emits the report with
@@ -254,7 +255,8 @@ bankparser compare statement.mt940 --fail-on-diff --json-errors
 Completed reports always go to stdout, including on exit 4; stderr is empty.
 Errors go to stderr; `--json-errors` uses the same `error` object with `code`,
 `message` and nullable `location` as the parse command. Without it errors remain
-human-readable. Argument/usage errors remain argparse text on stderr with exit 2.
+human-readable. Argument/usage errors use argparse text on stderr with exit 2,
+except when redacted diagnostic output is requested (see below).
 Errors take precedence over mismatch handling; no partial comparison report is
 returned. Parse validation exit 3 and Python `compare` behavior are unchanged.
 Matching output can include identical failed/skipped validation checks; this
@@ -272,6 +274,13 @@ the existing checks aggregate repeated issues. The legacy `location` and
 validation message fields remain unchanged. Expected/actual values can contain
 financial data under full serialization.
 
+When transaction dates are present and within the known bounds but a statement
+period bound is missing, the date diagnostic points to `statement.start_date` or
+`statement.end_date`. If both are missing, it points to `statement` and guidance
+names both required bounds. No transaction indices or source locations are
+reported for this statement-level prerequisite. Missing/out-of-range transaction
+dates retain their transaction field and affected-record context.
+
 The parse CLI accepts `--include-diagnostics` to add structured warnings and
 non-passing checks to its output. Structured errors are included under the
 existing `error` object when `--json-errors` is enabled. The existing
@@ -279,6 +288,10 @@ existing `error` object when `--json-errors` is enabled. The existing
 diagnostic-only validation metadata is available through `diagnostics_for`.
 `redacted-diagnostic` output omits messages, values, indices and source locations,
 while retaining allowlisted code, severity, format and canonical field.
+Redacted `--json-errors` responses include that safe projection under
+`error.diagnostic` and retain the existing top-level `error.code`. They omit the
+message, location, guidance, record indices and expected/actual values. CLI usage
+errors retain the code-only `CLI_USAGE_ERROR` response described below.
 
 Use `bankparser.serialization.to_primitive(value)` before JSON serialization.
 Amounts become strings, dates become ISO strings, and tuples become lists.
@@ -287,7 +300,11 @@ The optional `policy` keyword selects `full` (the unchanged default), `canonical
 `redacted-diagnostic`. The redacted diagnostic is a strict summary allowlist:
 format, validation status/check codes, warning codes, transaction count,
 comparison match/difference counts, and readiness status/reason codes/counts.
-For `Diagnostic` values it also retains severity and the canonical field name.
+For `Diagnostic` values it also retains severity and known canonical field names.
+Unknown/custom canonical fields are replaced with null, even if they look like
+valid paths, so identifiers cannot be passed through as field names.
+Diagnostic codes come from a fixed registry of built-in codes; unrecognised
+values, including custom warning/check/reason codes, become `UNKNOWN_CODE`.
 It omits free text, amounts, dates, IDs, names, references, paths, raw values,
 expected/actual values and fingerprints. `canonical` output can still contain
 sensitive financial and identity data. Redacted diagnostics reduce exposure but
@@ -295,6 +312,17 @@ do not promise anonymity. Serialization never mutates the input object.
 
 The `parse`, `compare` and `assess` CLI commands accept the same
 `--output-policy {full,canonical,redacted-diagnostic}` option. Full output stays
-the default. With the redacted policy, parse/compare errors suppress message and
-location text; `--json-errors` emits only the structured error code.
+the default. With the redacted policy, parse/compare/assess errors suppress
+message and location text and sanitize exception codes through the same registry;
+`--json-errors` emits the safe structured error code and diagnostic projection.
+
+A redacted output request is detected before argument parsing, including the
+`--output-policy=redacted-diagnostic` syntax and argparse option abbreviations.
+Usage errors then emit only `CLI_USAGE_ERROR`, with exit 2 and no stdout, even
+when an invalid argument appears before the output-policy option. With
+`--json-errors` they emit `{"error":{"code":"CLI_USAGE_ERROR"}}` on stderr.
+The parser does not echo invalid choices, unknown arguments or paths in this
+mode. Any explicit redaction request before `--` protects usage errors even among
+conflicting output-policy options. Tokens after `--` are positional data, not
+output-policy requests. Full/canonical usage errors keep normal argparse behavior.
 Schema changes and migration instructions are recorded in [CHANGELOG.md](../CHANGELOG.md).

@@ -158,7 +158,9 @@ must also agree before enrichment. Reordered or changed records raise
 are accepted only if all source enrichment fields are equivalent after ignoring
 source-path values and all backend fallback fields used for mapping agree.
 Their output records remain separate and retain their individual source paths.
-Conflicting metadata remains an explicit `AMBIGUOUS_TRANSACTION_ALIGNMENT`;
+Conflicting metadata remains an explicit `AMBIGUOUS_TRANSACTION_ALIGNMENT` once
+every ordered financial key matches. If financial keys and metadata both differ,
+`TRANSACTION_ALIGNMENT_MISMATCH` takes precedence at the first mismatched row;
 counts alone are insufficient. No automatic reordering or deduplication occurs.
 The declared account currency is preserved independently of entry
 and balance currencies, so contradictions fail `CURRENCY_CONSISTENCY` validation.
