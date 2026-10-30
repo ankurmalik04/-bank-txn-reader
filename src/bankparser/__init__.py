@@ -2,6 +2,7 @@
 
 from .api import implementations, parse
 from .comparison import ComparisonReport, compare
+from .diagnostics import Diagnostic, diagnostic_for_error, diagnostics_for
 from .errors import BankParserError, InputError, ParseError
 from .models import ParseResult
 from .options import CsvOptions
@@ -23,6 +24,7 @@ __all__ = [
     "CsvOptions",
     "CsvProfile",
     "DestinationAccount",
+    "Diagnostic",
     "DuplicateCandidate",
     "ImportAssessment",
     "ImportPolicy",
@@ -33,6 +35,8 @@ __all__ = [
     "__version__",
     "assess_import",
     "compare",
+    "diagnostic_for_error",
+    "diagnostics_for",
     "implementations",
     "load_csv_profile",
     "load_import_policy",

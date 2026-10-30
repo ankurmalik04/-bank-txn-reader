@@ -10,6 +10,7 @@ from typing import Any, NoReturn
 
 from bankparser.api import implementations, parse
 from bankparser.comparison import compare
+from bankparser.diagnostics import Diagnostic, diagnostic_for_error, diagnostics_for
 from bankparser.errors import BankParserError, InputError
 from bankparser.options import CsvOptions
 from bankparser.profiles import load_csv_profile
@@ -47,6 +48,11 @@ def build_parser(*, redacted_errors: bool = False) -> argparse.ArgumentParser:
     _add_csv_options(parse_parser)
     parse_parser.add_argument(
         "--json-errors", action="store_true", help="emit structured errors on stderr"
+    )
+    parse_parser.add_argument(
+        "--include-diagnostics",
+        action="store_true",
+        help="include structured non-passing checks and warnings in output",
     )
     _add_output_policy(parse_parser)
 
@@ -253,13 +259,12 @@ def main(argv: Sequence[str] | None = None) -> int:
                 )
             )
             return {"ready": 0, "review": 5, "not-ready": 6}[assessment.status]
-        print(
-            json.dumps(
-                to_primitive(result, policy=args.output_policy),
-                indent=2,
-                sort_keys=True,
+        output = to_primitive(result, policy=args.output_policy)
+        if getattr(args, "include_diagnostics", False):
+            output["diagnostics"] = to_primitive(
+                diagnostics_for(result), policy=args.output_policy
             )
-        )
+        print(json.dumps(output, indent=2, sort_keys=True))
         if result.validation.status == "failed" or (
             args.strict_validation and result.validation.status != "passed"
         ):
@@ -267,8 +272,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
     except BankParserError as exc:
         if getattr(args, "output_policy", "full") == "redacted-diagnostic":
-            _print_redacted_error(exc.code, getattr(args, "json_errors", False))
+            _print_redacted_error(
+                exc.code,
+                getattr(args, "json_errors", False),
+                diagnostic=diagnostic_for_error(exc),
+            )
         elif getattr(args, "json_errors", False):
+            diagnostic = diagnostic_for_error(exc)
             print(
                 json.dumps(
                     {
@@ -276,7 +286,10 @@ def main(argv: Sequence[str] | None = None) -> int:
                             "code": exc.code,
                             "message": str(exc),
                             "location": exc.location,
-                        }
+                            "diagnostic": to_primitive(
+                                diagnostic, policy=args.output_policy
+                            ),
+                        },
                     }
                 ),
                 file=sys.stderr,
@@ -287,10 +300,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 2
 
 
-def _print_redacted_error(code: str, json_errors: bool) -> None:
+def _print_redacted_error(
+    code: str, json_errors: bool, *, diagnostic: Diagnostic | None = None
+) -> None:
     safe_code = _safe_code(code)
     if json_errors:
-        print(json.dumps({"error": {"code": safe_code}}), file=sys.stderr)
+        error: dict[str, Any] = {"code": safe_code}
+        if diagnostic is not None:
+            error["diagnostic"] = to_primitive(diagnostic, policy="redacted-diagnostic")
+        print(json.dumps({"error": error}), file=sys.stderr)
     else:
         print(f"bankparser: {safe_code}", file=sys.stderr)
 

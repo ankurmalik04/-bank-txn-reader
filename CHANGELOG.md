@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+- Added version-1 `Diagnostic` values and public `diagnostics_for` /
+  `diagnostic_for_error` helpers. Diagnostics include severity, format, canonical
+  field, optional corrective guidance, and zero-based record indices aligned
+  with source locations. Missing date/currency validation checks now retain
+  structured indices and locations rather than requiring message parsing.
+  `parse --include-diagnostics` opts into a diagnostic array, and `--json-errors`
+  adds a versioned diagnostic while preserving the existing error fields.
+  Missing statement-period prerequisites now point to the missing statement
+  bounds rather than asking for transaction dates that are already present.
+  Redacted JSON errors include the safe diagnostic projection alongside the
+  existing error code; unknown canonical-field names are omitted as null.
+  Default serialized parse output is unchanged; privacy policies filter the new
+  fields according to their existing rules. Two diagnostic JSON schemas ship.
 - Serialization now accepts `policy="full"|"canonical"|"redacted-diagnostic"`.
   The full default is byte-shape compatible; canonical omits raw fields but can
   still expose sensitive canonical values. Redacted diagnostics use a strict

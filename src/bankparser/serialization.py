@@ -130,7 +130,8 @@ def _serialize(value: Any, *, omit_raw: bool) -> Any:
         return {
             field.name: _serialize(getattr(value, field.name), omit_raw=omit_raw)
             for field in dataclasses.fields(value)
-            if not (omit_raw and field.name == "raw")
+            if not field.metadata.get("diagnostic_only", False)
+            and not (omit_raw and field.name == "raw")
         }
     if isinstance(value, Decimal):
         return str(value)
@@ -195,6 +196,16 @@ def _redacted_diagnostic(value: Any) -> Any:
         }
     if name == "ValidationResult":
         return _redacted_validation(value)
+    if name == "Diagnostic":
+        return {
+            "diagnostic_schema_version": "1",
+            "code": _safe_code(value.code),
+            "severity": value.severity
+            if value.severity in {"info", "warning", "error"}
+            else None,
+            "format": value.format if value.format in _FORMATS else None,
+            "canonical_field": _safe_field(value.canonical_field),
+        }
     if name == "ValidationCheck":
         return {
             "code": _safe_code(value.code),
@@ -236,3 +247,40 @@ def _safe_version(value: Any) -> str | None:
     if not isinstance(value, str) or len(value) > 24:
         return None
     return value if re.fullmatch(r"[0-9]+(?:\.[0-9A-Za-z.+-]+)*", value) else None
+
+
+_CANONICAL_FIELDS = frozenset(
+    {
+        "account",
+        "account.id",
+        "account.iban",
+        "account.currency",
+        "statement",
+        "statement.id",
+        "statement.sequence",
+        "statement.start_date",
+        "statement.end_date",
+        "statement.opening_balance",
+        "statement.closing_balance",
+        "statement.opening_balance_currency",
+        "statement.closing_balance_currency",
+        "transactions",
+        "transactions.booking_date",
+        "transactions.value_date",
+        "transactions.amount",
+        "transactions.currency",
+        "transactions.description",
+        "transactions.reference",
+        "transactions.transaction_id",
+        "transactions.counterparty",
+        "transactions.counterparty.name",
+        "transactions.counterparty.account_id",
+        "transactions.counterparty.iban",
+        "transactions.raw",
+    }
+)
+
+
+def _safe_field(value: Any) -> str | None:
+    # A syntactically valid path can itself contain a private identifier.
+    return value if isinstance(value, str) and value in _CANONICAL_FIELDS else None
