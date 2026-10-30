@@ -162,14 +162,27 @@ def _map_transaction(
     amount = _required_decimal(record.get("Amount"))
     debtor = source.get("debtor") or _text(record.get("Debtor"))
     creditor = source.get("creditor") or _text(record.get("Creditor"))
-    counterparty_name = debtor if amount > 0 else creditor
-    counterparty_name = counterparty_name or debtor or creditor
+    names = {"debtor": debtor, "creditor": creditor}
+    role = (
+        "debtor"
+        if amount > 0 or (amount == 0 and _text(record.get("DrCr")) == "CRDT")
+        else "creditor"
+    )
+    # Returns can retain only the original payment party. Select one role for
+    # all fields, and do not borrow another party's name for an unnamed account.
+    if not any(
+        (names[role], source.get(f"{role}_account"), source.get(f"{role}_iban"))
+    ):
+        role = "creditor" if role == "debtor" else "debtor"
 
     end_to_end_id = _meaningful_reference(record.get("EndToEndId"))
+    account_servicer_reference = _meaningful_reference(
+        record.get("AcctSvcrRef")
+    ) or _meaningful_reference(source.get("account_servicer_reference"))
     reference = _first_not_none(
         end_to_end_id,
         _text(record.get("Reference")),
-        _text(record.get("AcctSvcrRef")),
+        account_servicer_reference,
     )
     raw = {
         key: value
@@ -178,7 +191,7 @@ def _map_transaction(
             "debtor": debtor,
             "creditor": creditor,
             "end_to_end_id": end_to_end_id,
-            "account_servicer_reference": _text(record.get("AcctSvcrRef")),
+            "account_servicer_reference": account_servicer_reference,
             **{key: value for key, value in source.items() if key != "_alignment"},
         }.items()
         if value is not None
@@ -191,11 +204,9 @@ def _map_transaction(
         currency=_currency(record.get("Currency")) or statement_currency,
         description=source.get("description"),
         counterparty=Counterparty(
-            name=counterparty_name,
-            account_id=source.get(
-                "debtor_account" if amount > 0 else "creditor_account"
-            ),
-            iban=source.get("debtor_iban" if amount > 0 else "creditor_iban"),
+            name=names[role],
+            account_id=source.get(f"{role}_account"),
+            iban=source.get(f"{role}_iban"),
         ),
         reference=reference,
         transaction_id=_meaningful_reference(source.get("transaction_id")),
@@ -239,7 +250,13 @@ def _source_transactions(statement: Any) -> list[dict[str, Any]]:
                     for node in narrative
                     if node.text and node.text.strip()
                 )
-                or None,
+                or _element_text(detail, "./AddtlTxInf")
+                or _element_text(entry, "./AddtlNtryInf"),
+                "account_servicer_reference": _first_not_none(
+                    _meaningful_reference(_element_text(detail, "./Refs/AcctSvcrRef")),
+                    _meaningful_reference(_element_text(detail, "./AcctSvcrRef")),
+                    _meaningful_reference(_element_text(entry, "./AcctSvcrRef")),
+                ),
                 "structured_references": tuple(
                     node.text.strip()
                     for node in structured_refs
