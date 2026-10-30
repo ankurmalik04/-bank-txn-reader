@@ -313,6 +313,24 @@ still compare equal; comparison is not an import-readiness check.
 `implementations(format)` lists configured names, even when an optional
 dependency is absent.
 
+## Destination import readiness
+
+Assess the requirements of an import destination separately from parsing:
+
+```python
+from bankparser import ImportPolicy, assess_import, parse
+
+assessment = assess_import(parse("corpus/csv/basic_valid.csv"), ImportPolicy())
+print(assessment.status)  # ready / review / not-ready
+```
+
+The assessor reports structured reasons, blocks failed financial checks and
+flags candidate repeats without deleting transactions. Confirmed destination
+account context stays separate from source facts. Optional missing balances need
+not block a movements-only destination. The CLI `bankparser assess FILE` supports
+versioned policy JSON and exits 0/5/6 for ready/review/not-ready. See
+[import readiness](docs/import-readiness.md) for defaults and bounded guarantees.
+
 ## CSV exporter profiles
 
 Use explicit source-header mappings or versioned data-only CSV profiles:

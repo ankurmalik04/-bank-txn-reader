@@ -1,0 +1,22 @@
+{
+  "policy_schema_version": "1",
+  "policy": {
+    "id": "synthetic-reconciled",
+    "version": "1",
+    "booking_date": "block",
+    "transaction_currency": "block",
+    "account_identity": "block",
+    "allow_destination_account": false,
+    "opening_balance": "block",
+    "closing_balance": "block",
+    "statement_period": "block",
+    "value_date": "block",
+    "value_date_exempt_formats": [
+      "ofx"
+    ],
+    "duplicate_candidates": "block",
+    "configured_currency": "block",
+    "other_incomplete_checks": "block",
+    "other_warnings": "block"
+  }
+}

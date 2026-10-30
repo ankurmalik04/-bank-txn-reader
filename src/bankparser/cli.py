@@ -13,10 +13,11 @@ from bankparser.comparison import compare
 from bankparser.errors import BankParserError, InputError
 from bankparser.options import CsvOptions
 from bankparser.profiles import load_csv_profile
+from bankparser.readiness import DestinationAccount, assess_import, load_import_policy
 from bankparser.serialization import to_primitive
 from bankparser.version import __version__
 
-_COMMANDS = {"parse", "compare", "implementations"}
+_COMMANDS = {"parse", "compare", "assess", "implementations"}
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -58,6 +59,27 @@ def build_parser() -> argparse.ArgumentParser:
     compare_parser.add_argument(
         "--json-errors", action="store_true", help="emit structured errors on stderr"
     )
+
+    assess_parser = subparsers.add_parser(
+        "assess", help="assess parsed data against destination import policy"
+    )
+    assess_parser.add_argument("file")
+    assess_parser.add_argument("--implementation")
+    _add_csv_options(assess_parser)
+    assess_parser.add_argument(
+        "--policy", metavar="FILE", help="data-only version-1 import policy JSON"
+    )
+    assess_parser.add_argument(
+        "--destination-account", help="destination ledger id, not a source identity"
+    )
+    assess_parser.add_argument("--destination-currency")
+    assess_parser.add_argument("--expected-source-account")
+    assess_parser.add_argument("--expected-source-iban")
+    assess_parser.add_argument("--confirm-account-mapping", action="store_true")
+    assess_parser.add_argument(
+        "--reviewed-duplicate", action="append", metavar="FINGERPRINT"
+    )
+    assess_parser.add_argument("--json-errors", action="store_true")
 
     impl = subparsers.add_parser("implementations", help="list parser implementations")
     impl.add_argument("format")
@@ -156,12 +178,42 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             print(json.dumps(to_primitive(report), indent=2, sort_keys=True))
             return 4 if args.fail_on_diff and not report.matches else 0
+        policy = None
+        destination = None
+        if args.command == "assess":
+            policy = load_import_policy(args.policy) if args.policy else None
+            if args.destination_account is not None:
+                destination = DestinationAccount(
+                    args.destination_account,
+                    args.destination_currency,
+                    args.expected_source_account,
+                    args.expected_source_iban,
+                    args.confirm_account_mapping,
+                )
+            elif any(
+                (
+                    args.destination_currency,
+                    args.expected_source_account,
+                    args.expected_source_iban,
+                    args.confirm_account_mapping,
+                )
+            ):
+                raise InputError("Destination context requires --destination-account")
         result = parse(
             args.file,
             implementation=args.implementation,
             csv_options=csv_options,
             **extra,
         )
+        if args.command == "assess":
+            assessment = assess_import(
+                result,
+                policy,
+                destination=destination,
+                reviewed_duplicates=tuple(args.reviewed_duplicate or ()),
+            )
+            print(json.dumps(to_primitive(assessment), indent=2, sort_keys=True))
+            return {"ready": 0, "review": 5, "not-ready": 6}[assessment.status]
         print(json.dumps(to_primitive(result), indent=2, sort_keys=True))
         if result.validation.status == "failed" or (
             args.strict_validation and result.validation.status != "passed"

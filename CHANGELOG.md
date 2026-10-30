@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+- Added separate ImportPolicy/assess_import readiness reports with ready, review
+  and not-ready outcomes, structured reasons and a data-only v1 policy loader.
+  Destination requirements cover dates, currency, identity, text and balances;
+  optional prerequisites need not block. Failed recorded and recomputed financial
+  checks always block, even under a permissive policy. ParseResult/ValidationResult
+  and canonical schema 1.1 remain unchanged.
+- Explicit destination account confirmation supplies import context without
+  populating source account/currency fields; known identity/currency conflicts
+  block. Repeated IDs/similar records remain intact and visible for review, with
+  optional review tokens bound to the canonical result, full resolved policy and
+  destination context. Earlier canonical-only tokens require fresh review.
+- Added `bankparser assess` with full JSON output and exits 0/5/6 for
+  ready/review/not-ready, 2 for errors. Existing parse/compare output and exits
+  are unchanged. Policy/assessment schemas, synthetic examples and guidance ship
+  with source artifacts; no runtime dependencies or ledger write operation added.
+
 - CSV adds explicit immutable source-header-to-field mappings (replacing synonyms),
   generic-date role selection, separate default_currency and expected_currency,
   physical header selection/bounded search, explicit supported encodings and
