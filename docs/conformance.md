@@ -149,8 +149,11 @@ certification was not assessed. This runner alone does not complete the plan's
 
 Without `--json`, JSON goes to stdout. `--json FILE` and `--markdown FILE` create
 new report files; existing outputs, symlinks and identical output paths are
-rejected. Inputs/expectations cannot be overwritten. If creating a later output
-fails, an earlier successfully created output can remain; the tool exits 2.
+rejected. Files are created with owner-only permissions on POSIX (`0600`, subject
+to the umask); Windows uses inherited filesystem ACLs. Shell redirection of stdout
+uses the shell's file permissions. Inputs/expectations cannot be overwritten.
+If creating a later output fails, an earlier successfully created output can
+remain; the tool exits 2.
 
 | Exit | Meaning |
 | --- | --- |
