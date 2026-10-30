@@ -126,9 +126,15 @@ a count check. In 0.5.0a2, ordered composite keys (booked amount,
 currency, direction, account, booking/value dates, EndToEndId and AcctSvcrRef)
 must also agree before enrichment. Reordered or changed records raise
 `TRANSACTION_ALIGNMENT_MISMATCH`; indistinguishable source keys raise
-`AMBIGUOUS_TRANSACTION_ALIGNMENT`, including repeated charges without enough
-distinguishing evidence. Counts alone are insufficient. No automatic reordering
-or deduplication occurs. The declared account currency is preserved independently of entry
+`AMBIGUOUS_TRANSACTION_ALIGNMENT`. In the unreleased checkout, repeated keys
+are accepted only if all source enrichment fields are equivalent after ignoring
+source-path values and all backend fallback fields used for mapping agree.
+Their output records remain separate and retain their individual source paths.
+Conflicting metadata remains an explicit `AMBIGUOUS_TRANSACTION_ALIGNMENT` once
+every ordered financial key matches. If financial keys and metadata both differ,
+`TRANSACTION_ALIGNMENT_MISMATCH` takes precedence at the first mismatched row;
+counts alone are insufficient. No automatic reordering or deduplication occurs.
+The declared account currency is preserved independently of entry
 and balance currencies, so contradictions fail `CURRENCY_CONSISTENCY` validation.
 Entries require status `BOOK`, in either direct `Sts` or wrapped `Sts/Cd` form;
 missing, pending, informational or unknown statuses raise

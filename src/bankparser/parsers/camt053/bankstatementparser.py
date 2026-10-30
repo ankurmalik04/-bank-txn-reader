@@ -490,19 +490,60 @@ def _verify_alignment(
     sources: list[dict[str, Any]], records: list[dict[str, Any]]
 ) -> None:
     source_keys = [_alignment_key(source["_alignment"]) for source in sources]
-    if len(set(source_keys)) != len(source_keys):
-        raise ParseError(
-            "CAMT source records lack distinguishable identities for enrichment",
-            code="AMBIGUOUS_TRANSACTION_ALIGNMENT",
-            location="Stmt/Ntry",
-        )
-    for index, (expected, record) in enumerate(zip(source_keys, records), start=1):
+    # Financial identity/order must agree for every row before considering
+    # whether repeated identities can safely share enrichment metadata.
+    for index, (expected, record) in enumerate(zip(source_keys, records)):
         if expected != _alignment_key(record):
             raise ParseError(
                 "CAMT backend identity, financial fields or order differ from source",
                 code="TRANSACTION_ALIGNMENT_MISMATCH",
-                location=sources[index - 1]["source_path"],
+                location=sources[index]["source_path"],
             )
+    groups: dict[tuple[Any, ...], list[int]] = {}
+    for index, key in enumerate(source_keys):
+        groups.setdefault(key, []).append(index)
+    for indices in groups.values():
+        if len(indices) < 2:
+            continue
+        first = indices[0]
+        source_projection = _source_enrichment_projection(sources[first])
+        backend_projection = _backend_enrichment_projection(records[first])
+        if any(
+            _source_enrichment_projection(sources[index]) != source_projection
+            or _backend_enrichment_projection(records[index]) != backend_projection
+            for index in indices[1:]
+        ):
+            raise ParseError(
+                "Repeated CAMT identities have conflicting enrichment metadata",
+                code="AMBIGUOUS_TRANSACTION_ALIGNMENT",
+                location=sources[first]["source_path"],
+            )
+
+
+def _source_enrichment_projection(source: Mapping[str, Any]) -> tuple[Any, ...]:
+    """Project every source field used in output, ignoring only provenance paths."""
+    return tuple(
+        (key, _without_source_paths(value))
+        for key, value in source.items()
+        if key != "source_path" and key != "_alignment"
+    )
+
+
+def _without_source_paths(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        return tuple(
+            (key, _without_source_paths(item))
+            for key, item in value.items()
+            if key != "source_path"
+        )
+    if isinstance(value, (tuple, list)):
+        return tuple(_without_source_paths(item) for item in value)
+    return value
+
+
+def _backend_enrichment_projection(record: Mapping[str, Any]) -> tuple[str | None, ...]:
+    """Include backend fields consumed by mapping but absent from the identity key."""
+    return tuple(_text(record.get(key)) for key in ("Reference", "Debtor", "Creditor"))
 
 
 def _balance_currency(statement: Any, code: str) -> str | None:
