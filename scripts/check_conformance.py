@@ -10,6 +10,7 @@ import argparse
 import hashlib
 import json
 import math
+import os
 import platform
 import re
 import sys
@@ -736,6 +737,11 @@ def markdown(report):
     return "\n".join(lines)
 
 
+def report_opener(path, flags):
+    # Restrict access at creation; Windows continues to use inherited ACLs.
+    return os.open(path, flags, 0o600 if os.name == "posix" else 0o666)
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("manifest", type=Path)
@@ -758,12 +764,14 @@ def main(argv=None):
         report = run(args.manifest)
         encoded = json.dumps(report, indent=2, sort_keys=True, ensure_ascii=True) + "\n"
         if args.json:
-            with args.json.open("x", encoding="utf-8") as stream:
+            with open(args.json, "x", encoding="utf-8", opener=report_opener) as stream:
                 stream.write(encoded)
         else:
             print(encoded, end="")
         if args.markdown:
-            with args.markdown.open("x", encoding="utf-8") as stream:
+            with open(
+                args.markdown, "x", encoding="utf-8", opener=report_opener
+            ) as stream:
                 stream.write(markdown(report))
         summary = report["facts"]["summary"]
         return 2 if summary["error"] else (1 if summary["failed"] else 0)
