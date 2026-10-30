@@ -490,6 +490,15 @@ def _verify_alignment(
     sources: list[dict[str, Any]], records: list[dict[str, Any]]
 ) -> None:
     source_keys = [_alignment_key(source["_alignment"]) for source in sources]
+    # Financial identity/order must agree for every row before considering
+    # whether repeated identities can safely share enrichment metadata.
+    for index, (expected, record) in enumerate(zip(source_keys, records)):
+        if expected != _alignment_key(record):
+            raise ParseError(
+                "CAMT backend identity, financial fields or order differ from source",
+                code="TRANSACTION_ALIGNMENT_MISMATCH",
+                location=sources[index]["source_path"],
+            )
     groups: dict[tuple[Any, ...], list[int]] = {}
     for index, key in enumerate(source_keys):
         groups.setdefault(key, []).append(index)
@@ -508,13 +517,6 @@ def _verify_alignment(
                 "Repeated CAMT identities have conflicting enrichment metadata",
                 code="AMBIGUOUS_TRANSACTION_ALIGNMENT",
                 location=sources[first]["source_path"],
-            )
-    for index, (expected, record) in enumerate(zip(source_keys, records), start=1):
-        if expected != _alignment_key(record):
-            raise ParseError(
-                "CAMT backend identity, financial fields or order differ from source",
-                code="TRANSACTION_ALIGNMENT_MISMATCH",
-                location=sources[index - 1]["source_path"],
             )
 
 
