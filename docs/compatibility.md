@@ -140,8 +140,42 @@ the fixture verifies the wrapped creditor form. `reference` prioritizes a
 meaningful EndToEndId, then the backend reference, then AcctSvcrRef. Other payment
 references and structured remittance references remain in raw metadata. Only the
 documented namespace/version has corpus coverage; this is not full ISO 20022/XSD
-validation. Multi-detail conservation remains an upstream check and has no
-independent batch fixture in this release.
+validation. In the published 0.5.0a2 baseline, multi-detail conservation is an
+upstream check. The unreleased wrapper also enforces it independently, with
+synthetic coverage described below.
+
+In the **unreleased checkout**, entries and balances require one booked Amt
+and exactly one literal CRDT/DBIT CdtDbtInd. Absent detail directions inherit the
+entry direction; present blank, unknown or duplicate directions are rejected.
+A single detail must agree with its entry's direction. Balances require explicit
+amount currency; entries may fall back to the declared account currency.
+Missing/duplicate supported amounts and amount containers are rejected before
+backend extraction, including duplicate equal values. This closes confirmed
+baseline acceptance of unknown balance directions, duplicate entry amounts and
+blank detail directions; the pinned backend already rejects invalid nonblank
+transaction directions and nonconserving batches.
+
+For every multi-detail entry, the signed detail sum must equal the signed booked
+entry amount. This is checked even without balances and cannot be bypassed by
+offsetting errors in different entries. Each detail needs a unique numeric booked
+amount among Amt, AmtDtls/TxAmt/Amt and AmtDtls/CntrValAmt/Amt candidates in the
+entry's currency (missing candidate currency inherits the entry currency).
+Numerically equal candidates with different decimal scales are allowed; foreign
+candidates are excluded, and InstdAmt is never a booked candidate. Mixed-direction
+batches use signed conservation; reversal flags do not invert the reported sign
+again. A single detail retains the whole booked entry amount, even when its
+foreign/instructed metadata differs. No exchange rate is inferred.
+
+Raw metadata adds entry_amount (non-negative source magnitude), entry_currency
+(effective booked currency), entry_direction and optional amount_details.
+Each amount_details item records a supported detail source_path, exact unsigned
+amount and explicitly supplied currency (null when absent); its path identifies
+whether it is TxAmt, CntrValAmt, InstdAmt or a direct Amt. Canonical transaction
+amount/currency remain the signed account-booked values. Raw entry information
+and existing source paths retain the entry/detail relationship. Raw keys are
+additive; public dataclass fields, function signatures and schema 1.1 are unchanged.
+These are bounded synthetic tests, not additional bank-profile certification or
+full FX/ISO 20022 support. See the API error table for the new source errors.
 
 In the **unreleased checkout**, absent/blank unstructured remittance falls back
 to detail AddtlTxInf, then entry AddtlNtryInf. Entry-level AcctSvcrRef is retained

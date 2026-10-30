@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+- CAMT source guards now require exactly one valid CRDT/DBIT direction and
+  booked amount for each entry/balance. Detail directions inherit only when
+  absent; blank/duplicate/unknown directions and conflicting single-detail signs
+  are rejected before backend extraction. Missing/duplicate supported detail
+  amounts/containers are rejected rather than selecting the first value.
+- Each multi-detail CAMT entry must conserve its own signed booked total in its
+  booked currency, independently of statement balances. Mixed-direction details
+  use their reported signs; RvslInd never triggers a second inversion. Instructed
+  amounts are not booked candidates and no currency conversion is inferred.
+  The pinned backend already checks batch conservation; this adds independent
+  wrapper enforcement and source-specific errors.
+- CAMT raw metadata adds entry_amount (unsigned magnitude), entry_currency,
+  entry_direction and optional amount_details (source paths, exact magnitudes
+  and explicit currencies) to preserve entry/detail and foreign/instructed values
+  separately from canonical booked amounts. Schema stays 1.1; public signatures
+  and dependency pins are unchanged. Consumers must tolerate additive raw keys.
+  Newly strict malformed-input errors are documented in docs/api.md.
+
 - CAMT descriptions now fall back from unstructured remittance to AddtlTxInf,
   then AddtlNtryInf. An entry-level AcctSvcrRef is retained in raw metadata and
   used when existing canonical reference candidates are absent; EndToEndId and

@@ -127,6 +127,9 @@ library exception has `code` and nullable `location`:
 | `INPUT_ERROR` | Check the path, input size or option configuration. |
 | `UNSUPPORTED_FORMAT` | Export a supported structured format. |
 | `UNSUPPORTED_ENTRY_STATUS` | CAMT.053 entries require `BOOK`; supply booked entries with an explicit status. |
+| `INVALID_CAMT_DIRECTION`, `CAMT_DIRECTION_CONFLICT` | Supply exactly one `CRDT`/`DBIT` per entry and balance; detail directions may inherit only when absent. A single detail must agree with its entry. |
+| `INVALID_CAMT_AMOUNT_STRUCTURE`, `MISSING_CAMT_CURRENCY` | Resolve missing/duplicate amounts or amount containers. Entries need a booked currency (explicit or account fallback); balances require explicit currency. |
+| `CAMT_BATCH_TOTAL_MISMATCH` | Review each entry's signed detail total against its booked amount; statement-wide reconciliation cannot substitute for this check. |
 | `SIGNED_CAMT_AMOUNT` | CAMT amounts must be non-negative magnitudes; `CdtDbtInd` supplies the sign, including for balances. |
 | `MISSING_DEPENDENCY` | Install the format's extra or select an installed implementation. |
 | `UNKNOWN_IMPLEMENTATION` | Inspect `implementations(format)`. |
