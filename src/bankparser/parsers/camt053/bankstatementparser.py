@@ -176,9 +176,9 @@ def _map_transaction(
         role = "creditor" if role == "debtor" else "debtor"
 
     end_to_end_id = _meaningful_reference(record.get("EndToEndId"))
-    account_servicer_reference = _text(record.get("AcctSvcrRef")) or source.get(
-        "account_servicer_reference"
-    )
+    account_servicer_reference = _meaningful_reference(
+        record.get("AcctSvcrRef")
+    ) or _meaningful_reference(source.get("account_servicer_reference"))
     reference = _first_not_none(
         end_to_end_id,
         _text(record.get("Reference")),
@@ -349,9 +349,9 @@ def _source_transactions(statement: Any) -> list[dict[str, Any]]:
                 or _element_text(detail, "./AddtlTxInf")
                 or _element_text(entry, "./AddtlNtryInf"),
                 "account_servicer_reference": _first_not_none(
-                    _element_text(detail, "./Refs/AcctSvcrRef"),
-                    _element_text(detail, "./AcctSvcrRef"),
-                    _element_text(entry, "./AcctSvcrRef"),
+                    _meaningful_reference(_element_text(detail, "./Refs/AcctSvcrRef")),
+                    _meaningful_reference(_element_text(detail, "./AcctSvcrRef")),
+                    _meaningful_reference(_element_text(entry, "./AcctSvcrRef")),
                 ),
                 "structured_references": tuple(
                     node.text.strip()
