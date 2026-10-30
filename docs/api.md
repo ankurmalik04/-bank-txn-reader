@@ -255,7 +255,8 @@ bankparser compare statement.mt940 --fail-on-diff --json-errors
 Completed reports always go to stdout, including on exit 4; stderr is empty.
 Errors go to stderr; `--json-errors` uses the same `error` object with `code`,
 `message` and nullable `location` as the parse command. Without it errors remain
-human-readable. Argument/usage errors remain argparse text on stderr with exit 2.
+human-readable. Argument/usage errors use argparse text on stderr with exit 2,
+except when redacted diagnostic output is requested (see below).
 Errors take precedence over mismatch handling; no partial comparison report is
 returned. Parse validation exit 3 and Python `compare` behavior are unchanged.
 Matching output can include identical failed/skipped validation checks; this
@@ -263,4 +264,31 @@ flag checks agreement, not import readiness or independent correctness.
 
 Use `bankparser.serialization.to_primitive(value)` before JSON serialization.
 Amounts become strings, dates become ISO strings, and tuples become lists.
+The optional `policy` keyword selects `full` (the unchanged default), `canonical`
+(omit every dataclass `raw` field while retaining other canonical data), or
+`redacted-diagnostic`. The redacted diagnostic is a strict summary allowlist:
+format, validation status/check codes, warning codes, transaction count,
+comparison match/difference counts, and readiness status/reason codes/counts.
+Diagnostic codes come from a fixed registry of built-in codes; unrecognised
+values, including custom warning/check/reason codes, become `UNKNOWN_CODE`.
+It omits free text, amounts, dates, IDs, names, references, paths, raw values,
+expected/actual values and fingerprints. `canonical` output can still contain
+sensitive financial and identity data. Redacted diagnostics reduce exposure but
+do not promise anonymity. Serialization never mutates the input object.
+
+The `parse`, `compare` and `assess` CLI commands accept the same
+`--output-policy {full,canonical,redacted-diagnostic}` option. Full output stays
+the default. With the redacted policy, parse/compare/assess errors suppress
+message and location text and sanitize exception codes through the same registry;
+`--json-errors` emits only the structured error code.
+
+A redacted output request is detected before argument parsing, including the
+`--output-policy=redacted-diagnostic` syntax and argparse option abbreviations.
+Usage errors then emit only `CLI_USAGE_ERROR`, with exit 2 and no stdout, even
+when an invalid argument appears before the output-policy option. With
+`--json-errors` they emit `{"error":{"code":"CLI_USAGE_ERROR"}}` on stderr.
+The parser does not echo invalid choices, unknown arguments or paths in this
+mode. Any explicit redaction request before `--` protects usage errors even among
+conflicting output-policy options. Tokens after `--` are positional data, not
+output-policy requests. Full/canonical usage errors keep normal argparse behavior.
 Schema changes and migration instructions are recorded in [CHANGELOG.md](../CHANGELOG.md).

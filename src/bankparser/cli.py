@@ -6,7 +6,7 @@ import argparse
 import json
 import sys
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, NoReturn
 
 from bankparser.api import implementations, parse
 from bankparser.comparison import compare
@@ -14,14 +14,23 @@ from bankparser.errors import BankParserError, InputError
 from bankparser.options import CsvOptions
 from bankparser.profiles import load_csv_profile
 from bankparser.readiness import DestinationAccount, assess_import, load_import_policy
-from bankparser.serialization import to_primitive
+from bankparser.serialization import _safe_code, to_primitive
 from bankparser.version import __version__
 
 _COMMANDS = {"parse", "compare", "assess", "implementations"}
 
 
-def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="bankparser")
+class _RedactedArgumentParser(argparse.ArgumentParser):
+    def error(self, message: str) -> NoReturn:
+        # argparse messages can contain arbitrary option values and file paths.
+        raise InputError("Invalid command line arguments", code="CLI_USAGE_ERROR")
+
+
+def build_parser(*, redacted_errors: bool = False) -> argparse.ArgumentParser:
+    parser_class = (
+        _RedactedArgumentParser if redacted_errors else argparse.ArgumentParser
+    )
+    parser = parser_class(prog="bankparser")
     parser.add_argument(
         "--version", action="version", version=f"%(prog)s {__version__}"
     )
@@ -39,6 +48,7 @@ def build_parser() -> argparse.ArgumentParser:
     parse_parser.add_argument(
         "--json-errors", action="store_true", help="emit structured errors on stderr"
     )
+    _add_output_policy(parse_parser)
 
     compare_parser = subparsers.add_parser(
         "compare", help="compare canonical output from parser implementations"
@@ -59,6 +69,7 @@ def build_parser() -> argparse.ArgumentParser:
     compare_parser.add_argument(
         "--json-errors", action="store_true", help="emit structured errors on stderr"
     )
+    _add_output_policy(compare_parser)
 
     assess_parser = subparsers.add_parser(
         "assess", help="assess parsed data against destination import policy"
@@ -80,6 +91,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--reviewed-duplicate", action="append", metavar="FINGERPRINT"
     )
     assess_parser.add_argument("--json-errors", action="store_true")
+    _add_output_policy(assess_parser)
 
     impl = subparsers.add_parser("implementations", help="list parser implementations")
     impl.add_argument("format")
@@ -125,6 +137,15 @@ def _add_csv_options(parser: argparse.ArgumentParser) -> None:
     )
 
 
+def _add_output_policy(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--output-policy",
+        choices=("full", "canonical", "redacted-diagnostic"),
+        default="full",
+        help="serialization policy (default: full)",
+    )
+
+
 def _options_from_args(args: argparse.Namespace) -> CsvOptions | None:
     values: dict[str, Any] = {
         name: getattr(args, name)
@@ -157,7 +178,13 @@ def _options_from_args(args: argparse.Namespace) -> CsvOptions | None:
 
 def main(argv: Sequence[str] | None = None) -> int:
     raw_args = list(argv) if argv is not None else sys.argv[1:]
-    args = build_parser().parse_args(_normalize_argv(raw_args))
+    try:
+        args = build_parser(redacted_errors=_redacted_requested(raw_args)).parse_args(
+            _normalize_argv(raw_args)
+        )
+    except InputError as exc:
+        _print_redacted_error(exc.code, "--json-errors" in raw_args)
+        return 2
     try:
         if args.command == "implementations":
             for implementation in implementations(args.format):
@@ -176,7 +203,13 @@ def main(argv: Sequence[str] | None = None) -> int:
                 csv_options=csv_options,
                 **extra,
             )
-            print(json.dumps(to_primitive(report), indent=2, sort_keys=True))
+            print(
+                json.dumps(
+                    to_primitive(report, policy=args.output_policy),
+                    indent=2,
+                    sort_keys=True,
+                )
+            )
             return 4 if args.fail_on_diff and not report.matches else 0
         policy = None
         destination = None
@@ -212,16 +245,30 @@ def main(argv: Sequence[str] | None = None) -> int:
                 destination=destination,
                 reviewed_duplicates=tuple(args.reviewed_duplicate or ()),
             )
-            print(json.dumps(to_primitive(assessment), indent=2, sort_keys=True))
+            print(
+                json.dumps(
+                    to_primitive(assessment, policy=args.output_policy),
+                    indent=2,
+                    sort_keys=True,
+                )
+            )
             return {"ready": 0, "review": 5, "not-ready": 6}[assessment.status]
-        print(json.dumps(to_primitive(result), indent=2, sort_keys=True))
+        print(
+            json.dumps(
+                to_primitive(result, policy=args.output_policy),
+                indent=2,
+                sort_keys=True,
+            )
+        )
         if result.validation.status == "failed" or (
             args.strict_validation and result.validation.status != "passed"
         ):
             return 3
         return 0
     except BankParserError as exc:
-        if getattr(args, "json_errors", False):
+        if getattr(args, "output_policy", "full") == "redacted-diagnostic":
+            _print_redacted_error(exc.code, getattr(args, "json_errors", False))
+        elif getattr(args, "json_errors", False):
             print(
                 json.dumps(
                     {
@@ -238,6 +285,33 @@ def main(argv: Sequence[str] | None = None) -> int:
             location = f" ({exc.location})" if exc.location else ""
             print(f"bankparser: {exc.code}: {exc}{location}", file=sys.stderr)
         return 2
+
+
+def _print_redacted_error(code: str, json_errors: bool) -> None:
+    safe_code = _safe_code(code)
+    if json_errors:
+        print(json.dumps({"error": {"code": safe_code}}), file=sys.stderr)
+    else:
+        print(f"bankparser: {safe_code}", file=sys.stderr)
+
+
+def _redacted_requested(argv: list[str]) -> bool:
+    """Detect redaction before argparse can echo invalid arguments.
+
+    Accept argparse's option abbreviations and equals syntax. Any explicit
+    redaction request protects usage errors, even among conflicting options.
+    Arguments after the end-of-options delimiter are positional data.
+    """
+    for index, token in enumerate(argv):
+        if token == "--":
+            break
+        option, separator, value = token.partition("=")
+        if option.startswith("--") and "--output-policy".startswith(option):
+            if not separator and index + 1 < len(argv):
+                value = argv[index + 1]
+            if value == "redacted-diagnostic":
+                return True
+    return False
 
 
 def _normalize_argv(argv: list[str]) -> list[str]:
