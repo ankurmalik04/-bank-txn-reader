@@ -32,6 +32,10 @@ ROOT_FILES = {
 }
 DOCS = {
     "docs/conformance-plan.md",
+    "docs/conformance.md",
+    "docs/schemas/conformance-manifest-v1.schema.json",
+    "docs/schemas/conformance-expectation-v1.schema.json",
+    "docs/schemas/conformance-report-v1.schema.json",
     "docs/api.md",
     "docs/compatibility.md",
     "docs/dependencies.md",
@@ -42,6 +46,7 @@ SCRIPTS = {
     "scripts/inventory_dependencies.py",
     "scripts/check_distribution.py",
     "scripts/check_install.py",
+    "scripts/check_conformance.py",
 }
 TREE_SUFFIXES = {
     "src": {".py", ".typed"},

@@ -1,0 +1,39 @@
+{
+  "manifest_schema_version": "1",
+  "profile": {
+    "id": "synthetic-native-csv",
+    "version": "1",
+    "exporter": "independently invented BankParser corpus",
+    "format": "csv",
+    "format_version": "synthetic CSV v1",
+    "implementation": "native",
+    "csv_options": null,
+    "settings": {
+      "encoding": "UTF-8",
+      "account_type": "synthetic bank account",
+      "currency": "GBP",
+      "locale": "synthetic ISO dates",
+      "date_convention": "booking/value meanings in corpus PROVENANCE.md",
+      "amount_convention": "exact signed account-booked amounts; format source conventions apply"
+    }
+  },
+  "samples": [
+    {
+      "id": "basic-valid-native-csv",
+      "source": "../../corpus/csv/basic_valid.csv",
+      "source_sha256": "b59eba0f5fd48f5d75e359c43948d1da513af86e8ab68b95b79717a7c61d9c52",
+      "expected": "native-csv.expected.json",
+      "expected_sha256": "3ba86ea7b5614cb4d468caf29e88e03cb60672fec2a7ba0087457147780100b3",
+      "evidence": {
+        "kind": "synthetic",
+        "cohort": "development",
+        "permission": "independently invented; repository MIT license",
+        "expectation_author": "independent synthetic corpus authors",
+        "expectation_method": "Copied account/statement/transactions from the existing independently authored corpus golden, without invoking BankParser; see corpus/PROVENANCE.md",
+        "independent_reviewer": null,
+        "held_out_untouched": false
+      },
+      "policy_differences": []
+    }
+  ]
+}
