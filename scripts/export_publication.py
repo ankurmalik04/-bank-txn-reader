@@ -50,7 +50,7 @@ SCRIPTS = {
 }
 TREE_SUFFIXES = {
     "src": {".py", ".typed"},
-    "tests": {".py"},
+    "tests": {".py", ".xml", ".xsd", ".md"},
     "corpus": {".py", ".md", ".json", ".mt940", ".xml", ".csv", ".ofx", ".qfx"},
     "examples": {".py", ".json"},
     ".github": {".yml", ".yaml"},

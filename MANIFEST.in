@@ -14,5 +14,6 @@ recursive-include examples/conformance *.json
 recursive-include examples/output *.json
 recursive-include corpus *.mt940 *.xml *.ofx *.qfx *.csv *.json
 recursive-include tests *.py
+recursive-include tests/fixtures *.xml *.xsd *.md
 prune docs/reviews
 exclude docs/code-review-2026-10-08.md
