@@ -16,8 +16,11 @@
   still expose sensitive canonical values. Redacted diagnostics use a strict
   structural allowlist and omit messages, values, identifiers, paths and
   fingerprints. The parse/compare/assess CLI commands accept the matching
-  `--output-policy`; redacted CLI errors omit message and location. This reduces
-  exposure but does not promise anonymity, and no input objects are mutated.
+  `--output-policy`; redacted CLI errors omit message and location. A fixed
+  built-in code registry replaces unrecognised codes with UNKNOWN_CODE, including
+  custom exceptions. Redacted CLI usage errors emit only CLI_USAGE_ERROR instead
+  of echoing invalid arguments, including failures before the policy flag. This
+  reduces exposure but does not promise anonymity, and no input objects are mutated.
 - CAMT now accepts repeated financial alignment keys only when every source
   enrichment field is semantically identical across the repeated records and
   the backend fields used as enrichment fallbacks also agree. Source provenance

@@ -381,3 +381,122 @@ def test_compare_errors_take_precedence_and_use_stderr_only(
         assert captured.err.startswith(f"bankparser: {expected_code}:")
         if kind == "parser":
             assert "(row[2])" in captured.err
+
+
+@pytest.mark.parametrize("json_errors", [False, True])
+@pytest.mark.parametrize("policy", ["full", "canonical", "redacted-diagnostic"])
+def test_custom_exception_codes_are_sanitized_only_in_redacted_mode(
+    monkeypatch, capsys, policy, json_errors
+):
+    marker = "GB75TEST00000000000001"
+
+    def fail(*args, **kwargs):
+        raise InputError(marker, code=marker, location=marker)
+
+    monkeypatch.setattr("bankparser.cli.parse", fail)
+    argv = ["statement.csv", "--output-policy", policy]
+    if json_errors:
+        argv.append("--json-errors")
+    assert main(argv) == 2
+    output = capsys.readouterr()
+    assert output.out == ""
+    if policy == "redacted-diagnostic":
+        assert marker not in output.err
+        if json_errors:
+            assert json.loads(output.err) == {"error": {"code": "UNKNOWN_CODE"}}
+        else:
+            assert output.err == "bankparser: UNKNOWN_CODE\n"
+    else:
+        assert marker in output.err
+
+
+@pytest.mark.parametrize("command", ["parse", "compare", "assess"])
+@pytest.mark.parametrize(
+    "selector",
+    [
+        ["--output-policy", "redacted-diagnostic"],
+        ["--output-policy=redacted-diagnostic"],
+        ["--output-pol", "redacted-diagnostic"],
+    ],
+)
+@pytest.mark.parametrize(
+    "invalid",
+    [
+        ["--format", "GB75TEST00000000000001"],
+        ["--GB75TEST00000000000001"],
+        ["--header-row", "GB75TEST00000000000001"],
+    ],
+)
+@pytest.mark.parametrize("json_errors", [False, True])
+def test_redacted_usage_errors_never_echo_arguments(
+    command, selector, invalid, json_errors, capsys
+):
+    argv = [command, "PRIVATE_MARKER_829174.csv", *invalid, *selector]
+    if json_errors:
+        argv.append("--json-errors")
+    assert main(argv) == 2
+    output = capsys.readouterr()
+    assert output.out == ""
+    assert "GB75TEST00000000000001" not in output.err
+    assert "PRIVATE_MARKER_829174" not in output.err
+    if json_errors:
+        assert json.loads(output.err) == {"error": {"code": "CLI_USAGE_ERROR"}}
+    else:
+        assert output.err == "bankparser: CLI_USAGE_ERROR\n"
+
+
+@pytest.mark.parametrize("policy", ["full", "canonical"])
+def test_nonredacted_usage_errors_keep_argparse_behavior(policy, capsys):
+    with pytest.raises(SystemExit) as caught:
+        main(
+            [
+                "statement.csv",
+                "--output-policy",
+                policy,
+                "--format",
+                "GB75TEST00000000000001",
+            ]
+        )
+    assert caught.value.code == 2
+    assert "GB75TEST00000000000001" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize(
+    "selector",
+    [
+        ["--output-policy=redacted-diagnostic"],
+        ["--output-policy", "redacted-diagnostic", "--output-policy", "full"],
+    ],
+)
+def test_redacted_usage_protects_file_shorthand_and_conflicting_policies(
+    selector, capsys
+):
+    assert (
+        main(
+            [
+                "PRIVATE_MARKER_829174.csv",
+                "--format",
+                "GB75TEST00000000000001",
+                *selector,
+            ]
+        )
+        == 2
+    )
+    output = capsys.readouterr()
+    assert output.out == ""
+    assert output.err == "bankparser: CLI_USAGE_ERROR\n"
+
+
+def test_policy_looking_positional_data_does_not_select_redaction(capsys):
+    with pytest.raises(SystemExit) as caught:
+        main(
+            [
+                "statement.csv",
+                "--format",
+                "GB75TEST00000000000001",
+                "--",
+                "--output-policy=redacted-diagnostic",
+            ]
+        )
+    assert caught.value.code == 2
+    assert "GB75TEST00000000000001" in capsys.readouterr().err

@@ -1,5 +1,8 @@
+from dataclasses import replace
 from datetime import date
 from decimal import Decimal
+
+import pytest
 
 from bankparser.models import (
     Account,
@@ -121,7 +124,7 @@ def test_redacted_policy_supports_nested_and_direct_diagnostic_models():
             "status": "failed",
             "checks": [{"code": "BALANCE_RECONCILIATION", "status": "failed"}],
         },
-        {"code": "SAFE_CODE"},
+        {"code": "UNKNOWN_CODE"},
     ]
     assert "PRIVATE_MARKER_829174" not in repr(primitive)
 
@@ -169,7 +172,7 @@ def test_redacted_assessment_omits_reason_locations_messages_and_fingerprints():
         validation=ValidationResult("warning"),
         reasons=(
             ImportReason(
-                "ACCOUNT_IDENTITY_REQUIRED",
+                "GB75TEST00000000000001",
                 "review",
                 "PRIVATE_MARKER_829174",
                 (0,),
@@ -184,3 +187,29 @@ def test_redacted_assessment_omits_reason_locations_messages_and_fingerprints():
     assert "PRIVATE_MARKER_829174" not in repr(primitive)
     assert "path" not in repr(primitive)
     assert primitive["duplicate_candidate_count"] == 1
+    assert primitive["reasons"] == [{"code": "UNKNOWN_CODE", "severity": "review"}]
+    assert "GB75TEST00000000000001" not in repr(primitive)
+
+
+@pytest.mark.parametrize(
+    "code", ["GB75TEST00000000000001", "PRIVATE_MARKER_829174", "custom-code", ""]
+)
+def test_redacted_codes_reject_untrusted_values_in_direct_and_nested_models(code):
+    warning = Warning(code, "private message")
+    check = ValidationCheck(code, "failed", "private message")
+    result = replace(
+        sensitive_result(),
+        warnings=(warning,),
+        validation=ValidationResult("failed", (check,)),
+    )
+    assert to_primitive(warning, policy="redacted-diagnostic") == {
+        "code": "UNKNOWN_CODE"
+    }
+    assert to_primitive(check, policy="redacted-diagnostic") == {
+        "code": "UNKNOWN_CODE",
+        "status": "failed",
+    }
+    redacted = to_primitive(result, policy="redacted-diagnostic")
+    assert redacted["warnings"] == [{"code": "UNKNOWN_CODE"}]
+    assert redacted["validation"]["checks"][0]["code"] == "UNKNOWN_CODE"
+    assert to_primitive(result)["warnings"][0]["code"] == code
