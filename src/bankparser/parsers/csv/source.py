@@ -175,7 +175,7 @@ def source_rows(layout: CsvLayout) -> Iterator[tuple[int, int, dict[str, str]]]:
                 raise ParseError(
                     f"Expected {len(layout.headers)} CSV cells, received {len(cells)}",
                     code="INVALID_CSV_ROW",
-                    location=f"CSV line {reader.line_num}",
+                    location=f"CSV line {start}",
                 )
             yield start, reader.line_num, dict(zip(layout.headers, cells))
     except StopIteration:

@@ -165,3 +165,130 @@ def test_optional_csv_backend_keeps_failure_checks(monkeypatch, failure):
     assert caught.value.code == (
         "TRANSACTION_COUNT_MISMATCH" if failure == "count" else "PARSE_ERROR"
     )
+
+
+@pytest.mark.parametrize("newline", ["\n", "\r\n", "\r"])
+@pytest.mark.parametrize(
+    "headers,values,options,code,column",
+    [
+        (
+            ["Booking Date", "Value Date", "Amount", "Currency"],
+            ["invalid-date", "2026-10-01", "1.00", "GBP"],
+            None,
+            "UNPARSED_TRANSACTION_DATE",
+            "column 'Booking Date'",
+        ),
+        (
+            ["Date", "Amount", "Currency"],
+            ["2026-10-01", "1.00", "GBP"],
+            None,
+            "AMBIGUOUS_DATE_SEMANTICS",
+            "column 'Date'",
+        ),
+        (
+            ["Booking Date", "Amount", "Currency", "Balance"],
+            ["2026-10-01", "1.00", "GBP", "10.00"],
+            None,
+            "CSV_BALANCE_ORDER_UNKNOWN",
+            "column 'Balance'",
+        ),
+        (
+            ["Booking Date", "Amount", "Currency"],
+            ["2026-10-01", "1.00", ""],
+            {"default_currency": "GBP"},
+            "CONFIGURED_CURRENCY",
+            "currency",
+        ),
+    ],
+)
+def test_multiline_record_warnings_use_start_line_and_preserve_raw_end(
+    newline, headers, values, options, code, column
+):
+    from bankparser import CsvOptions, diagnostics_for
+
+    source = io.StringIO(newline="")
+    writer = csv.writer(source, lineterminator=newline)
+    writer.writerow([*headers, "Description"])
+    writer.writerow([*values, f"First line{newline}Second line"])
+    # Repeated warnings still retain the first record's starting location.
+    writer.writerow([*values, f"Third line{newline}Fourth line"])
+    result = parse(
+        source.getvalue().encode(),
+        csv_options=CsvOptions(**options) if options else None,
+    )
+    warnings = [w for w in result.warnings if w.code == code]
+    assert len(warnings) == 1
+    assert warnings[0].location == f"CSV line 2, {column}"
+    assert [t.raw["source_line_start"] for t in result.transactions] == [2, 4]
+    assert [t.raw["source_line"] for t in result.transactions] == [3, 5]
+    assert [t.amount for t in result.transactions] == [Decimal("1.00")] * 2
+    assert result.transactions[0].description == f"First line{newline}Second line"
+    diagnostics = {d.code: d for d in diagnostics_for(result)}
+    assert diagnostics[code].source_locations == (f"CSV line 2, {column}",)
+    if code == "UNPARSED_TRANSACTION_DATE":
+        assert diagnostics["TRANSACTION_BOOKING_DATES"].source_locations == (
+            "CSV line 2",
+            "CSV line 4",
+        )
+
+
+@pytest.mark.parametrize("newline", ["\n", "\r\n", "\r"])
+@pytest.mark.parametrize(
+    "headers,values,options,code,suffix",
+    [
+        (["Amount"], ["not-money"], None, "INVALID_AMOUNT", ", column 'Amount'"),
+        (["Amount"], ["1.234"], None, "AMBIGUOUS_AMOUNT", ", column 'Amount'"),
+        (
+            ["Debit", "Credit"],
+            ["not-money", ""],
+            None,
+            "INVALID_AMOUNT",
+            ", column 'Debit'",
+        ),
+        (
+            ["Debit", "Credit"],
+            ["", "not-money"],
+            None,
+            "INVALID_AMOUNT",
+            ", column 'Credit'",
+        ),
+        (
+            ["Debit", "Credit"],
+            ["-1", ""],
+            None,
+            "SIGNED_DEBIT_CREDIT",
+            ", column 'Debit'",
+        ),
+        (["Debit", "Credit"], ["", ""], None, "MISSING_AMOUNT", ""),
+        (["Debit", "Credit"], ["1", "2"], None, "AMBIGUOUS_MOVEMENT", ""),
+        (
+            ["Amount"],
+            ["1"],
+            {"expected_currency": "EUR"},
+            "CSV_CURRENCY_CONSTRAINT",
+            ", currency",
+        ),
+        (["Amount"], ["1", "extra-cell"], None, "INVALID_CSV_ROW", ""),
+    ],
+)
+def test_multiline_record_errors_use_start_line_after_prior_multiline_record(
+    newline, headers, values, options, code, suffix
+):
+    from bankparser import CsvOptions
+
+    source = io.StringIO(newline="")
+    writer = csv.writer(source, lineterminator=newline)
+    writer.writerow(["Booking Date", "Currency", "Description", *headers])
+    # Blank rows and a preceding multiline record count toward physical lines.
+    source.write(newline)
+    good = ["1"] if headers == ["Amount"] else ["1", ""]
+    currency = "EUR" if options else "GBP"
+    writer.writerow(["2026-10-01", currency, f"Earlier{newline}record", *good])
+    writer.writerow(["2026-10-02", "GBP", f"First line{newline}Second line", *values])
+    with pytest.raises(ParseError) as caught:
+        parse(
+            source.getvalue().encode(),
+            csv_options=CsvOptions(**options) if options else None,
+        )
+    assert caught.value.code == code
+    assert caught.value.location == f"CSV line 5{suffix}"

@@ -97,9 +97,12 @@ Header row and search limit are mutually exclusive. Without either, the first
 nonblank CSV record is the header, preserving existing behavior. Blank data rows
 are skipped; multiline cells are preserved. Configured raw metadata records the
 header start/end physical lines and each transaction's source_line_start.
-The existing source_line remains the data record's ending physical line. Error
-locations use physical ending lines and original source column names. No footer
-skipping or automatic multi-account splitting is supported.
+The existing source_line remains the data record's ending physical line. Parser
+warning locations and row/amount/currency error locations use the record's
+starting physical line and retain original source column names. Together,
+source_line_start and source_line retain the complete multiline record span for
+successfully parsed transactions. No footer skipping or automatic multi-account
+splitting is supported.
 
 ## Reusable data-only profiles
 

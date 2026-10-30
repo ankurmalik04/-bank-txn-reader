@@ -23,7 +23,10 @@ they do not replace production/held-out profile evidence or general fuzzing.
 The cases exposed a multiline CSV location issue: default parsing retained only
 the ending line. Such records now also retain `raw.source_line_start`, allowing
 diagnostics to report their actual starting line. `raw.source_line` retains its
-existing ending-line meaning.
+existing ending-line meaning. CSV parser warnings and row/amount/currency errors
+also use record starting lines. Regression cases cover invalid dates and amounts,
+split movements, currency constraints and row widths across LF, CRLF and CR files;
+blank lines and preceding multiline records count toward the physical location.
 
 This describes released BankParser 0.5.0a2, schema 1.1, with unreleased checkout
 changes called out below. Coverage is established by synthetic
