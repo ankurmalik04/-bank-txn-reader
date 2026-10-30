@@ -46,8 +46,9 @@ not authenticity or permission.
 1. Select one exact exporter profile and record its version, format version,
    encoding, account type, currency, locale, date/amount meanings and additional
    exporter settings. `implementation` selects one existing parser; `csv_options`
-   supports only the existing decimal/grouping/date options. Settings are recorded
-   evidence, not executable rules or automatic CSV column mappings.
+   supports the CsvOptions fields, including explicit mappings, header selection,
+   currency fallback/constraints and encoding (see [CSV profiles](csv-profiles.md)). Settings are recorded
+   evidence, not executable rules; only the declared CsvOptions configure parsing.
 2. Independently establish every account/statement/transaction field directly
    from permitted source evidence. Use the complete shape in an example
    `.expected.json`, including nulls for genuinely absent canonical values.

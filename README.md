@@ -313,6 +313,22 @@ still compare equal; comparison is not an import-readiness check.
 `implementations(format)` lists configured names, even when an optional
 dependency is absent.
 
+## CSV exporter profiles
+
+Use explicit source-header mappings or versioned data-only CSV profiles:
+
+```python
+from bankparser import load_csv_profile, parse
+
+profile = load_csv_profile("examples/csv-profiles/euro-split.profile.json")
+result = parse("examples/csv-profiles/euro-split.csv", csv_profile=profile)
+```
+
+The same configuration works in CLI parse/compare with `--csv-profile FILE`, or
+explicit `--map SOURCE=FIELD` flags. See [CSV profiles](docs/csv-profiles.md) for
+header/encoding controls, currency fallback versus constraint, provenance and
+five synthetic examples. Existing generic CSV behavior remains the default.
+
 ## Sample conformance
 
 Compare parser output with independently reviewed, frozen expectations:

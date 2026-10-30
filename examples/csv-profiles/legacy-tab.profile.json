@@ -1,0 +1,20 @@
+{
+  "profile_schema_version": "1",
+  "id": "synthetic-legacy-tab",
+  "version": "1",
+  "format": "csv",
+  "options": {
+    "columns": {
+      "Jour": "date",
+      "Libell\u00e9": "description",
+      "Somme": "amount"
+    },
+    "date_role": "value_date",
+    "date_format": "%d/%m/%Y",
+    "delimiter": "\t",
+    "encoding": "cp1252",
+    "header_search_limit": 5,
+    "default_currency": "GBP",
+    "expected_currency": "GBP"
+  }
+}

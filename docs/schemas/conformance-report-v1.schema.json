@@ -538,10 +538,8 @@
         "csv_options": {
           "anyOf": [
             {
-              "type": "null"
-            },
-            {
               "type": "object",
+              "additionalProperties": false,
               "properties": {
                 "decimal_separator": {
                   "enum": [
@@ -560,14 +558,138 @@
                   ]
                 },
                 "date_format": {
-                  "type": [
-                    "string",
-                    "null"
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "\\S"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "columns": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "minProperties": 1,
+                      "propertyNames": {
+                        "type": "string",
+                        "pattern": "^\\S(?:[\\s\\S]*\\S)?(?![\\s\\S])"
+                      },
+                      "additionalProperties": {
+                        "enum": [
+                          "date",
+                          "booking_date",
+                          "value_date",
+                          "description",
+                          "amount",
+                          "debit",
+                          "credit",
+                          "balance",
+                          "currency",
+                          "account_id",
+                          "iban",
+                          "transaction_id",
+                          "reference"
+                        ]
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "date_role": {
+                  "enum": [
+                    null,
+                    "booking_date",
+                    "value_date"
+                  ]
+                },
+                "default_currency": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^[A-Za-z]{3}(?![\\s\\S])"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "expected_currency": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^[A-Za-z]{3}(?![\\s\\S])"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "header_row": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 10000
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "header_search_limit": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 200
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "encoding": {
+                  "enum": [
+                    "utf-8",
+                    "utf-8-sig",
+                    "cp1252",
+                    "windows-1252",
+                    "latin-1",
+                    "iso-8859-1"
+                  ]
+                },
+                "delimiter": {
+                  "enum": [
+                    null,
+                    ",",
+                    ";",
+                    "\t",
+                    "|"
                   ]
                 }
               },
-              "required": [],
-              "additionalProperties": false
+              "not": {
+                "required": [
+                  "header_row",
+                  "header_search_limit"
+                ],
+                "properties": {
+                  "header_row": {
+                    "type": "integer"
+                  },
+                  "header_search_limit": {
+                    "type": "integer"
+                  }
+                }
+              }
+            },
+            {
+              "type": "null"
             }
           ]
         }

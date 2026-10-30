@@ -1,0 +1,22 @@
+{
+  "profile_schema_version": "1",
+  "id": "synthetic-euro-split",
+  "version": "1",
+  "format": "csv",
+  "options": {
+    "columns": {
+      "Date": "date",
+      "Label": "description",
+      "Out": "debit",
+      "In": "credit",
+      "Unit": "currency"
+    },
+    "date_role": "booking_date",
+    "date_format": "%d/%m/%Y",
+    "decimal_separator": ",",
+    "grouping_separator": ".",
+    "delimiter": ";",
+    "header_row": 3,
+    "expected_currency": "EUR"
+  }
+}

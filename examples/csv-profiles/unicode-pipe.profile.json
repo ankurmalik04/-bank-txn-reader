@@ -1,0 +1,15 @@
+{
+  "profile_schema_version": "1",
+  "id": "synthetic-unicode-pipe",
+  "version": "1",
+  "format": "csv",
+  "options": {
+    "columns": {
+      "\u65e5\u4ed8": "booking_date",
+      "\u91d1\u984d": "amount",
+      "\u901a\u8ca8": "currency",
+      "\u8aac\u660e": "description"
+    },
+    "delimiter": "|"
+  }
+}

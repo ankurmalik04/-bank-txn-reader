@@ -309,3 +309,15 @@ neither operation changes the caller's settings.
 
 These checks do not establish document authenticity, duplicate-import safety,
 continuity between statements, or reconciliation against an accounting ledger.
+
+
+### Unreleased explicit CSV profiles
+
+The default CSV corpus and ambiguity rules remain compatible. Optional mappings,
+generic-date roles, explicit currency fallback/constraint, physical header
+selection, declared encodings and data-only profiles are described in
+[CSV profiles](csv-profiles.md). Five synthetic exporter layouts have independent
+full account/statement/transaction expectations. This adds no production profile
+certification. Configured raw provenance and CONFIGURED_CURRENCY are additive;
+canonical schema remains 1.1. The optional adapter's normalization/count check
+continues to share native extraction rather than providing independent agreement.
