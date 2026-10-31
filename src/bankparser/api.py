@@ -8,7 +8,7 @@ from os import PathLike
 from pathlib import Path
 
 from bankparser.detection import detect_format
-from bankparser.errors import InputError
+from bankparser.errors import BankParserError, InputError, UnsupportedFormatError
 from bankparser.models import ParseResult, SourceMetadata, Warning
 from bankparser.options import CsvOptions
 from bankparser.parsers.base import ParseContext
@@ -21,6 +21,7 @@ from bankparser.parsers.mt940 import (
 from bankparser.parsers.ofx import BankStatementParserOfxAdapter, OfxParseAdapter
 from bankparser.parsers.registry import ParserRegistry
 from bankparser.parsers.selector import select_parser
+from bankparser.profiles import CsvProfile
 from bankparser.validation import validate
 from bankparser.version import __version__
 
@@ -33,22 +34,38 @@ def parse(
     *,
     implementation: str | None = None,
     csv_options: CsvOptions | None = None,
+    csv_profile: CsvProfile | None = None,
+    format: str | None = None,
 ) -> ParseResult:
     """Parse a supported bank statement into the canonical BankParser model."""
     data, file_name = _load_input(source)
-    format = detect_format(data)
-    if csv_options is not None and format != "csv":
-        raise InputError("csv_options can only be used with CSV input")
-    adapter = select_parser(
-        _default_registry(), format=format, implementation=implementation
-    )
+    csv_options = _csv_configuration(csv_options, csv_profile)
+    format = _input_format(data, csv_options=csv_options, format=format)
+    try:
+        adapter = select_parser(
+            _default_registry(), format=format, implementation=implementation
+        )
+    except BankParserError as exc:
+        if exc.format is None:
+            exc.format = format
+        raise
     # Backends perform signed Decimal arithmetic. Isolate it from callers'
     # precision, exponent limits and traps; input length bounds literal digits
     # and provides room for carries when the backend totals source movements.
     with localcontext(Context(prec=max(28, len(data)), Emin=MIN_EMIN, Emax=MAX_EMAX)):
-        canonical = adapter.parse(
-            data, ParseContext(file_name=file_name, csv_options=csv_options)
-        )
+        try:
+            canonical = adapter.parse(
+                data,
+                ParseContext(
+                    file_name=file_name,
+                    csv_options=csv_options,
+                    csv_profile=csv_profile,
+                ),
+            )
+        except BankParserError as exc:
+            if exc.format is None:
+                exc.format = format
+            raise
     validation = validate(
         canonical.account, canonical.statement, canonical.transactions
     )
@@ -80,6 +97,38 @@ def parse(
         validation=validation,
         warnings=warnings,
     )
+
+
+def _csv_configuration(
+    options: CsvOptions | None, profile: CsvProfile | None
+) -> CsvOptions | None:
+    if profile is not None:
+        if not isinstance(profile, CsvProfile) or options is not None:
+            raise InputError("Supply csv_profile or csv_options, not both")
+        return profile.options
+    if options is not None and not isinstance(options, CsvOptions):
+        raise InputError("csv_options must be CsvOptions")
+    return options
+
+
+def _input_format(
+    data: bytes, *, csv_options: CsvOptions | None, format: str | None
+) -> str:
+    if format not in (None, "csv"):
+        raise InputError("Only format='csv' is supported as an explicit override")
+    try:
+        detected = detect_format(data)
+    except UnsupportedFormatError:
+        if format == "csv" or csv_options is not None:
+            return (
+                "csv"  # The adapter must still validate header shape, rows and amounts.
+            )
+        raise
+    if detected != "csv" and (csv_options is not None or format == "csv"):
+        raise InputError(
+            "csv_options/CSV format override can only be used with CSV input"
+        )
+    return detected
 
 
 def implementations(format: str) -> tuple[str, ...]:

@@ -1,7 +1,10 @@
 # Bank/exporter sample conformance plan
 
-Saved 21 October 2026. Status: planned; no real samples collected or reviewed
-under this plan yet. Maintainer: ankurmalik04. The first alpha is published;
+Saved 21 October 2026; evidence status updated 24 October 2026. Status: incomplete;
+three official bank demos have source-based comparisons covering 51 transactions,
+but no production-export cohort, independent second review or held-out samples.
+See the bounded results and exclusions in [compatibility.md](compatibility.md).
+Maintainer: ankurmalik04. The first alpha is published;
 private security reporting and notifications are complete per maintainer confirmation.
 
 ## Goal and first cohort
@@ -79,6 +82,14 @@ claiming held-out success.
   limits; public material contains only permitted non-sensitive information.
 - Compatibility documentation updated only for demonstrated profile boundaries.
   Evidence includes synthetic regression cases where allowed and useful.
+
+## Tooling available, 28 October 2026
+
+The reusable v1 runner, strict schemas and synthetic examples are implemented;
+see [the conformance guide](conformance.md). The older CAMT demo expectations,
+source hashes and reports remain unchanged. Tooling completion does not supply
+production exports, independent second review or untouched held-out samples.
+Those evidence prerequisites remain incomplete.
 
 ## Next actions
 

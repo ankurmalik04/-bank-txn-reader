@@ -34,6 +34,17 @@ DOCS = {
     "docs/csv-onboarding.md",
     "docs/profile-evidence.md",
     "docs/conformance-plan.md",
+    "docs/conformance.md",
+    "docs/csv-profiles.md",
+    "docs/import-readiness.md",
+    "docs/schemas/import-policy-v1.schema.json",
+    "docs/schemas/import-assessment-v1.schema.json",
+    "docs/schemas/csv-profile-v1.schema.json",
+    "docs/schemas/conformance-manifest-v1.schema.json",
+    "docs/schemas/conformance-expectation-v1.schema.json",
+    "docs/schemas/conformance-report-v1.schema.json",
+    "docs/schemas/diagnostic-v1.schema.json",
+    "docs/schemas/diagnostic-redacted-v1.schema.json",
     "docs/api.md",
     "docs/compatibility.md",
     "docs/dependencies.md",
@@ -44,10 +55,11 @@ SCRIPTS = {
     "scripts/inventory_dependencies.py",
     "scripts/check_distribution.py",
     "scripts/check_install.py",
+    "scripts/check_conformance.py",
 }
 TREE_SUFFIXES = {
     "src": {".py", ".typed"},
-    "tests": {".py"},
+    "tests": {".py", ".xml", ".xsd", ".md"},
     "corpus": {".py", ".md", ".json", ".mt940", ".xml", ".csv", ".ofx", ".qfx"},
     "examples": {".py", ".json"},
     ".github": {".yml", ".yaml"},
@@ -62,6 +74,11 @@ def selected(path):
         path in ROOT_FILES
         or path in DOCS
         or path in SCRIPTS
+        or (
+            len(value.parts) == 3
+            and value.parts[:2] == ("examples", "csv-profiles")
+            and value.suffix in {".json", ".csv"}
+        )
         or (
             len(value.parts) > 2
             and value.parts[:2] == ("docs", "audits")

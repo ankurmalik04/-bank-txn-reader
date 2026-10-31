@@ -7,6 +7,7 @@ from typing import Protocol
 
 from bankparser.models import Account, Statement, Transaction, Warning
 from bankparser.options import CsvOptions
+from bankparser.profiles import CsvProfile
 
 
 @dataclass(frozen=True, slots=True)
@@ -15,6 +16,7 @@ class ParseContext:
 
     file_name: str | None = None
     csv_options: CsvOptions | None = None
+    csv_profile: CsvProfile | None = None
 
 
 @dataclass(frozen=True, slots=True)

@@ -15,7 +15,7 @@ result = parse(
 )
 ```
 
-`parse(source, *, implementation=None, csv_options=None)` accepts a filesystem
+`parse(source, *, implementation=None, csv_options=None, csv_profile=None, format=None)` accepts a filesystem
 path (`str` or `os.PathLike`) or `bytes`. It detects format from content and
 returns `ParseResult`. Input must be non-empty and at most 5 MiB. File reads are
 bounded even if the file grows between the size check and reading.
@@ -65,15 +65,29 @@ The result has no built-in file hash, idempotency key or deduplication state.
 
 ## CSV options
 
-`CsvOptions` is a frozen dataclass with three optional fields:
+`CsvOptions` is a frozen dataclass. Its first three positional fields remain compatible:
 
 | Option | Allowed values and effect |
 | --- | --- |
 | `decimal_separator` | `"."` or `","`; `None` accepts only unambiguous ungrouped amounts. |
 | `grouping_separator` | `"."`, `","`, space or apostrophe; requires an explicit, different decimal separator. |
 | `date_format` | An explicit `datetime.strptime` format, such as `"%d/%m/%Y"`. |
+| `columns` | Exact source-header → canonical field mapping, replacing synonym matching; None keeps automatic headers. |
+| `date_role` | `booking_date` or `value_date` for generic Date; None retains ambiguous semantics. |
+| `default_currency` | Fill missing currency only, with a warning and raw provenance. |
+| `expected_currency` | Assert effective currency; missing/conflicting values are errors. |
+| `header_row`, `header_search_limit` | Exact physical header start or bounded first-N-line search; mutually exclusive. |
+| `encoding`, `delimiter` | Explicit supported encoding/delimiter; no encoding guessing. |
 
-Passing `csv_options` for another format raises `InputError`. Invalid monetary
+Pass `csv_profile=load_csv_profile(path)` instead of csv_options for a reusable
+v1 data-only convention set; the two parameters are mutually exclusive.
+Both parse and compare support the same parameters and CLI flags. format="csv"
+is a guarded override; CSV options/profile also declare otherwise-unrecognized
+CSV. Recognized non-CSV input is rejected and all CSV structural/financial checks
+remain active. See [CSV profiles](csv-profiles.md) for exact fields, physical line
+numbering, currency semantics, provenance and synthetic examples.
+
+Passing CSV configuration for another recognized format raises `InputError`. Invalid monetary
 conventions raise errors; invalid or ambiguous dates stay `None` with an
 `UNPARSED_TRANSACTION_DATE` warning. Generic Date and running Balance columns
 retain their source values without establishing more specific semantics.
@@ -127,12 +141,16 @@ library exception has `code` and nullable `location`:
 | `INPUT_ERROR` | Check the path, input size or option configuration. |
 | `UNSUPPORTED_FORMAT` | Export a supported structured format. |
 | `UNSUPPORTED_ENTRY_STATUS` | CAMT.053 entries require `BOOK`; supply booked entries with an explicit status. |
+| `INVALID_CAMT_DIRECTION`, `CAMT_DIRECTION_CONFLICT` | Supply exactly one `CRDT`/`DBIT` per entry and balance; detail directions may inherit only when absent. A single detail must agree with its entry. |
+| `INVALID_CAMT_AMOUNT_STRUCTURE`, `MISSING_CAMT_CURRENCY` | Resolve missing/duplicate amounts or amount containers. Entries need a booked currency (explicit or account fallback); balances require explicit currency. |
+| `CAMT_BATCH_TOTAL_MISMATCH` | Review each entry's signed detail total against its booked amount; statement-wide reconciliation cannot substitute for this check. |
 | `SIGNED_CAMT_AMOUNT` | CAMT amounts must be non-negative magnitudes; `CdtDbtInd` supplies the sign, including for balances. |
 | `MISSING_DEPENDENCY` | Install the format's extra or select an installed implementation. |
 | `UNKNOWN_IMPLEMENTATION` | Inspect `implementations(format)`. |
 | `MULTIPLE_STATEMENTS` | Split the input into supported statement/account scopes. |
 | `AMBIGUOUS_AMOUNT` | Supply explicit decimal/grouping conventions. |
 | `INVALID_AMOUNT`, `SIGNED_DEBIT_CREDIT`, `AMBIGUOUS_MOVEMENT` | Correct the amount/sign convention or use a signed Amount column. |
+| `MISSING_CSV_COLUMN`, `INVALID_CSV_HEADER`, `AMBIGUOUS_CSV_HEADER`, `CSV_CURRENCY_CONSTRAINT` | Review explicit mappings, physical header selection and declared currency constraint. |
 | `AMBIGUOUS_COLUMNS`, `INVALID_CSV_ROW`, `INVALID_CSV` | Correct the CSV header, structure or encoding. |
 | `EMPTY_STATEMENT` | Supply a CSV containing transaction rows. |
 | `TRANSACTION_COUNT_MISMATCH` | Review the source/backend mismatch; do not import a partial result. |
@@ -147,15 +165,37 @@ This is a list of common codes, not an exhaustive enumeration. More specific
 encoding, date, balance and transaction errors exist; do not depend on message
 wording for control flow.
 
+## Assess destination readiness
+
+`assess_import(result, policy=None, *, destination=None, reviewed_duplicates=())`
+returns a separate ImportAssessment with ready/review/not-ready status and
+structured reasons. ImportPolicy declares destination requirements; optional
+DestinationAccount supplies explicitly confirmed import context without changing
+source facts. Failed recorded or recomputed validation always blocks. Candidate
+repeats are reported, never removed; reviews bind to a canonical result digest,
+the full resolved policy and destination context.
+
+Use load_import_policy(path) for bounded data-only v1 JSON policies, or construct
+ImportPolicy directly. The new `bankparser assess` command emits the report with
+exits 0/5/6 for ready/review/not-ready and 2 for errors. Parse/compare JSON and
+exits stay unchanged. Policy/report schemas are versioned separately from parse
+schema 1.1. See [import readiness](import-readiness.md) for defaults, context,
+review-token semantics, reason fields and limitations.
+
 ## Compare and serialize
 
 `implementations(format)` lists configured names without importing optional
 backends. It does not certify their dependencies are installed.
 
-`compare(source, *, implementations=None, csv_options=None)` reads one bounded input snapshot,
+`compare(source, *, implementations=None, csv_options=None, csv_profile=None, format=None)` reads one bounded input snapshot,
 runs the selected implementations and returns `ComparisonReport`: `format`,
 `implementations`, `matches` and `differences`. Each difference contains a field
-path and the value from each implementation. Provenance/raw metadata are excluded.
+path, serialized `values` from each implementation, and a `present` boolean map.
+For each implementation, an absent path is represented by `values[name] = null`
+and `present[name] = false`; a present null has `present[name] = true`.
+Empty strings and literal `"<missing>"` text remain ordinary present values.
+Presence refers to the flattened canonical result path, not proof that a bank
+source field existed. Provenance/raw metadata are excluded.
 At least two distinct implementations are required; failures abort comparison.
 An explicit selection runs only those implementations, without invoking an
 unselected default. Omitted selection uses all configured implementations.
@@ -182,6 +222,107 @@ original serialized values. Other fields, including numeric-looking references,
 compare exactly. `compare_results(mapping)` offers the same comparison for
 already-parsed results.
 
+For example, a field absent from one implementation's extra transaction and
+reported literally by another can produce:
+
+```json
+{
+  "path": "transactions[1].reference",
+  "values": {"one": null, "two": "<missing>"},
+  "present": {"one": false, "two": true}
+}
+```
+
+The `present` map is additive comparison output. Consumers should read it to
+interpret null placeholders; the old `"<missing>"` string is no longer an absence
+marker. `compare` and `compare_results` populate every implementation's flag.
+The existing two-argument `ComparisonDifference(path, values)` constructor is
+still accepted, with an empty presence map for caller-created objects. Canonical
+parse-result schema remains 1.1.
+
+The comparison CLI accepts `--fail-on-diff` and `--json-errors`:
+
+```bash
+bankparser compare statement.mt940 --fail-on-diff --json-errors
+```
+
+| Comparison exit | Meaning |
+| --- | --- |
+| 0 | Completed; with `--fail-on-diff`, the report matches. Without it, differences also exit 0. |
+| 2 | Loading, detection, dependency, option, parsing or comparison error; no comparison report is emitted. |
+| 4 | Completed with differences and `--fail-on-diff` enabled. |
+
+Completed reports always go to stdout, including on exit 4; stderr is empty.
+Errors go to stderr; `--json-errors` uses the same `error` object with `code`,
+`message` and nullable `location` as the parse command. Without it errors remain
+human-readable. Argument/usage errors use argparse text on stderr with exit 2,
+except when redacted diagnostic output is requested (see below).
+Errors take precedence over mismatch handling; no partial comparison report is
+returned. Parse validation exit 3 and Python `compare` behavior are unchanged.
+Matching output can include identical failed/skipped validation checks; this
+flag checks agreement, not import readiness or independent correctness.
+
+## Structured diagnostics
+
+`bankparser.diagnostics_for(parse_result)` returns `Diagnostic` objects for
+warnings and non-passing validation checks. `diagnostic_for_error(error)` maps a
+`BankParserError` to the same model. Diagnostics retain machine-readable codes
+and severities, format, canonical field, optional corrective guidance, and
+source context. Transaction `record_indices` are zero-based; a validation
+diagnostic may carry multiple indices and aligned `source_locations` because
+the existing checks aggregate repeated issues. The legacy `location` and
+validation message fields remain unchanged. Expected/actual values can contain
+financial data under full serialization.
+
+When transaction dates are present and within the known bounds but a statement
+period bound is missing, the date diagnostic points to `statement.start_date` or
+`statement.end_date`. If both are missing, it points to `statement` and guidance
+names both required bounds. No transaction indices or source locations are
+reported for this statement-level prerequisite. Missing/out-of-range transaction
+dates retain their transaction field and affected-record context.
+
+The parse CLI accepts `--include-diagnostics` to add structured warnings and
+non-passing checks to its output. Structured errors are included under the
+existing `error` object when `--json-errors` is enabled. The existing
+`to_primitive` output shape remains unchanged when diagnostics are not requested;
+diagnostic-only validation metadata is available through `diagnostics_for`.
+`redacted-diagnostic` output omits messages, values, indices and source locations,
+while retaining allowlisted code, severity, format and canonical field.
+Redacted `--json-errors` responses include that safe projection under
+`error.diagnostic` and retain the existing top-level `error.code`. They omit the
+message, location, guidance, record indices and expected/actual values. CLI usage
+errors retain the code-only `CLI_USAGE_ERROR` response described below.
+
 Use `bankparser.serialization.to_primitive(value)` before JSON serialization.
 Amounts become strings, dates become ISO strings, and tuples become lists.
+The optional `policy` keyword selects `full` (the unchanged default), `canonical`
+(omit every dataclass `raw` field while retaining other canonical data), or
+`redacted-diagnostic`. The redacted diagnostic is a strict summary allowlist:
+format, validation status/check codes, warning codes, transaction count,
+comparison match/difference counts, and readiness status/reason codes/counts.
+For `Diagnostic` values it also retains severity and known canonical field names.
+Unknown/custom canonical fields are replaced with null, even if they look like
+valid paths, so identifiers cannot be passed through as field names.
+Diagnostic codes come from a fixed registry of built-in codes; unrecognised
+values, including custom warning/check/reason codes, become `UNKNOWN_CODE`.
+It omits free text, amounts, dates, IDs, names, references, paths, raw values,
+expected/actual values and fingerprints. `canonical` output can still contain
+sensitive financial and identity data. Redacted diagnostics reduce exposure but
+do not promise anonymity. Serialization never mutates the input object.
+
+The `parse`, `compare` and `assess` CLI commands accept the same
+`--output-policy {full,canonical,redacted-diagnostic}` option. Full output stays
+the default. With the redacted policy, parse/compare/assess errors suppress
+message and location text and sanitize exception codes through the same registry;
+`--json-errors` emits the safe structured error code and diagnostic projection.
+
+A redacted output request is detected before argument parsing, including the
+`--output-policy=redacted-diagnostic` syntax and argparse option abbreviations.
+Usage errors then emit only `CLI_USAGE_ERROR`, with exit 2 and no stdout, even
+when an invalid argument appears before the output-policy option. With
+`--json-errors` they emit `{"error":{"code":"CLI_USAGE_ERROR"}}` on stderr.
+The parser does not echo invalid choices, unknown arguments or paths in this
+mode. Any explicit redaction request before `--` protects usage errors even among
+conflicting output-policy options. Tokens after `--` are positional data, not
+output-policy requests. Full/canonical usage errors keep normal argparse behavior.
 Schema changes and migration instructions are recorded in [CHANGELOG.md](../CHANGELOG.md).

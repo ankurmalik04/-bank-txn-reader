@@ -1,0 +1,13 @@
+{
+  "policy_schema_version": "1",
+  "policy": {
+    "id": "synthetic-movements",
+    "version": "1",
+    "booking_date": "block",
+    "transaction_currency": "block",
+    "account_identity": "review",
+    "opening_balance": "ignore",
+    "closing_balance": "ignore",
+    "value_date": "ignore"
+  }
+}

@@ -49,15 +49,24 @@ def validate(
 def _transaction_currency_check(
     transactions: tuple[Transaction, ...],
 ) -> ValidationCheck:
-    missing = [
-        str(i) for i, tx in enumerate(transactions) if not (tx.currency or "").strip()
-    ]
+    missing = tuple(
+        i for i, tx in enumerate(transactions) if not (tx.currency or "").strip()
+    )
     return ValidationCheck(
         code="TRANSACTION_CURRENCIES",
         status="skipped" if missing else "passed",
-        message="Missing transaction currencies at indices: " + ", ".join(missing)
+        message="Missing transaction currencies at indices: "
+        + ", ".join(map(str, missing))
         if missing
         else "Every transaction has a currency (empty activity is complete)",
+        record_indices=missing,
+        source_locations=tuple(
+            _transaction_source_location(transactions[index]) for index in missing
+        ),
+        canonical_field="transactions.currency" if missing else None,
+        guidance=(
+            "Supply a currency for each affected transaction." if missing else None
+        ),
     )
 
 
@@ -74,31 +83,68 @@ def _transaction_date_check(
     start, end = statement.start_date, statement.end_date
     if start is not None and end is not None and start > end:
         return ValidationCheck(code, "skipped", "Statement period is reversed")
-    missing, outside = [], []
+    missing: list[int] = []
+    outside: list[int] = []
     for i, transaction in enumerate(transactions):
         value = getattr(transaction, field)
         if value is None:
-            missing.append(str(i))
+            missing.append(i)
         elif (start is not None and value < start) or (end is not None and value > end):
-            outside.append(str(i))
+            outside.append(i)
+    affected = tuple(sorted((*missing, *outside)))
+    field_name = f"transactions.{field}"
+    guidance = (
+        "Supply a valid booking date for each affected transaction."
+        if field == "booking_date"
+        else "Supply a valid value date when the source provides one."
+    )
+    source_locations = tuple(
+        _transaction_source_location(transactions[index]) for index in affected
+    )
+    relevant_field = field_name if affected else None
+    relevant_guidance = guidance if affected else None
+    if not affected and (start is None or end is None):
+        missing_bounds = tuple(
+            name
+            for name, value in (("start_date", start), ("end_date", end))
+            if value is None
+        )
+        relevant_field = (
+            "statement"
+            if len(missing_bounds) == 2
+            else f"statement.{missing_bounds[0]}"
+        )
+        relevant_guidance = (
+            "Supply the missing statement reporting-period bounds from the source: "
+            + " and ".join(f"statement.{name}" for name in missing_bounds)
+            + "."
+        )
     if outside:
         return ValidationCheck(
             code,
             "failed" if field == "booking_date" else "skipped",
             f"{field} outside inclusive known statement bounds at indices: "
-            + ", ".join(outside)
+            + ", ".join(map(str, outside))
             + (
                 "; value-date settlement exceptions require review"
                 if field == "value_date"
                 else ""
             ),
+            record_indices=affected,
+            source_locations=source_locations,
+            canonical_field=relevant_field,
+            guidance=relevant_guidance,
         )
     if missing or start is None or end is None:
         return ValidationCheck(
             code,
             "skipped",
             "Both period bounds and all transaction dates are required; missing date indices: "
-            + (", ".join(missing) or "none"),
+            + (", ".join(map(str, missing)) or "none"),
+            record_indices=affected,
+            source_locations=source_locations,
+            canonical_field=relevant_field,
+            guidance=relevant_guidance,
         )
     return ValidationCheck(
         code, "passed", f"All {field} values lie within the inclusive statement period"
@@ -133,6 +179,18 @@ def _account_identity_check(account: Account) -> ValidationCheck:
         if present
         else "Account identity is missing; select and verify the destination account",
     )
+
+
+def _transaction_source_location(transaction: Transaction) -> str | None:
+    path = transaction.raw.get("source_path")
+    if isinstance(path, str) and path:
+        return path
+    line = transaction.raw.get("source_line_start") or transaction.raw.get(
+        "source_line"
+    )
+    if isinstance(line, int) and not isinstance(line, bool):
+        return f"CSV line {line}"
+    return None
 
 
 def _numeric_finiteness_check(

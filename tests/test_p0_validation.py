@@ -151,6 +151,94 @@ def test_ambiguous_repeated_source_keys_are_rejected_even_with_different_metadat
 
 
 @backend
+def test_repeated_source_keys_are_accepted_when_enrichment_is_invariant():
+    import copy
+    import xml.etree.ElementTree as E
+
+    root = E.fromstring(CAMT.read_bytes().replace(b"561.25", b"462.50"))
+    statement = root.find(".//{*}Stmt")
+    entries = statement.findall("{*}Ntry")
+    duplicate = copy.deepcopy(entries[0])
+    statement.remove(entries[1])
+    statement.append(duplicate)
+
+    result = parse(E.tostring(root))
+
+    assert result.validation.status == "passed"
+    assert result.statement.closing_balance == Decimal("462.50")
+    assert [tx.amount for tx in result.transactions] == [Decimal("-18.75")] * 2
+    assert len(result.transactions) == 2
+    assert result.transactions[0].description == result.transactions[1].description
+    assert result.transactions[0].reference == result.transactions[1].reference
+    assert result.transactions[0].counterparty == result.transactions[1].counterparty
+    assert (
+        result.transactions[0].raw["source_path"]
+        != result.transactions[1].raw["source_path"]
+    )
+
+
+@backend
+def test_repeated_source_keys_reject_conflicting_backend_enrichment(monkeypatch):
+    import copy
+    import xml.etree.ElementTree as E
+
+    from bankstatementparser.camt_parser import CamtParser
+
+    root = E.fromstring(CAMT.read_bytes())
+    statement = root.find(".//{*}Stmt")
+    entries = statement.findall("{*}Ntry")
+    duplicate = copy.deepcopy(entries[0])
+    statement.remove(entries[1])
+    statement.append(duplicate)
+    original = CamtParser.get_transactions
+
+    def conflicting(self):
+        frame = original(self)
+        frame.loc[1, "Reference"] = "DIFFERENT-BACKEND-REFERENCE"
+        return frame
+
+    monkeypatch.setattr(CamtParser, "get_transactions", conflicting)
+    with pytest.raises(ParseError) as caught:
+        parse(E.tostring(root))
+    assert caught.value.code == "AMBIGUOUS_TRANSACTION_ALIGNMENT"
+
+
+@backend
+@pytest.mark.parametrize("mismatched_index", [1, 2])
+@pytest.mark.parametrize("source_metadata_conflict", [False, True])
+def test_financial_mismatch_precedes_repeated_enrichment_ambiguity(
+    monkeypatch, mismatched_index, source_metadata_conflict
+):
+    import copy
+    import xml.etree.ElementTree as E
+
+    from bankstatementparser.camt_parser import CamtParser
+
+    root = E.fromstring(CAMT.read_bytes().replace(b"561.25", b"542.50"))
+    statement = root.find(".//{*}Stmt")
+    entries = statement.findall("{*}Ntry")
+    duplicate = copy.deepcopy(entries[0])
+    if source_metadata_conflict:
+        duplicate.find(".//{*}Ustrd").text = "Conflicting source metadata"
+    statement.insert(list(statement).index(entries[1]), duplicate)
+    original = CamtParser.get_transactions
+
+    def conflicting(self):
+        frame = original(self)
+        frame.loc[1, "Reference"] = "DIFFERENT-BACKEND-REFERENCE"
+        frame.loc[mismatched_index, "Amount"] = Decimal("-19.00")
+        return frame
+
+    monkeypatch.setattr(CamtParser, "get_transactions", conflicting)
+    with pytest.raises(ParseError) as caught:
+        parse(E.tostring(root))
+    assert caught.value.code == "TRANSACTION_ALIGNMENT_MISMATCH"
+    assert (
+        caught.value.location == f"Stmt/Ntry[{mismatched_index + 1}]/NtryDtls/TxDtls[1]"
+    )
+
+
+@backend
 def test_unique_equal_amount_records_use_references_to_detect_reordering(monkeypatch):
     from bankstatementparser.camt_parser import CamtParser
 

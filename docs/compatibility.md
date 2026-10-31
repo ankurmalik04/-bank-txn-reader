@@ -1,10 +1,69 @@
 # Compatibility and conformance
 
-This describes BankParser 0.5.0a2, schema 1.1. Coverage is established by synthetic
+## BP-11 bounded adversarial coverage
+
+The existing suite already contains negative tests. The following gap matrix
+records the additional deterministic property cases and the remaining limits.
+
+| Boundary | Existing evidence | BP-11 increment or remaining gap |
+| --- | --- | --- |
+| Decimal context and exact money | `test_decimal_context.py`, validation tests | 16 delimiter/scale combinations; scales 0/2/18/120, 125-digit cancellation, one-unit remainder, signed zero, hostile context/traps; integer sum oracle and deliberately wrong balance. |
+| CSV quoting, encoding, row and sign failures | `test_native_csv.py`, `test_csv_profiles.py`, `test_source_safety.py` | Generated quoted delimiters/newlines, BOM, repeated references and exact ordered multiplicity. Three multiline diagnostic cases include indices beyond 9. |
+| CAMT scope, direction, duplicates, batch and FX | `test_camt_financial_guards.py`, `test_p0_validation.py`, metadata regressions | Existing targeted cases retained. Broader generated XML/entity campaigns remain outstanding. |
+| OFX and MT940 IDs, dates, scope and malformed records | `test_ofxparse_adapter.py`, `test_source_safety.py`, scope tests | Existing adversarial examples retained; broader truncation/type mutation campaigns remain outstanding. |
+| Size and snapshot boundaries | `test_source_safety.py`, API/release tests | Existing bounded-read and mismatch cases retained; no new resource-limit campaign. |
+| Comparison and privacy | `test_comparison.py`, serialization and diagnostic tests | 16 single-reference mutations across indices 0/2/10/11, including null, empty and literal missing marker; exact difference path/value/presence checks and redacted output. |
+
+Run `PYTHONPATH=src python -m pytest tests/test_adversarial_properties.py` for
+the 35 new cases. Each parametrized case is a bounded reproducer: no random
+seed, persisted example database, network, new test dependency or slow campaign
+is required. These checks establish the listed properties on synthetic inputs;
+they do not replace production/held-out profile evidence or general fuzzing.
+
+The cases exposed a multiline CSV location issue: default parsing retained only
+the ending line. Such records now also retain `raw.source_line_start`, allowing
+diagnostics to report their actual starting line. `raw.source_line` retains its
+existing ending-line meaning. CSV parser warnings and row/amount/currency errors
+also use record starting lines. Regression cases cover invalid dates and amounts,
+split movements, currency constraints and row widths across LF, CRLF and CR files;
+blank lines and preceding multiline records count toward the physical location.
+
+This describes released BankParser 0.5.0a2, schema 1.1, with unreleased checkout
+changes called out below. Coverage is established by synthetic
 fixtures and regression tests. It does not certify a bank, every version of a
 format, or every document an upstream parser accepts.
 
 The next evidence milestone follows the [bank/exporter sample conformance plan](conformance-plan.md): 3–5 permitted profiles with independently reviewed expectations and held-out samples. These profiles are planned, not established support.
+
+## Bank-published demo checks — 24 October 2026
+
+Source-based checks now cover 51 transactions in seven statements from three
+official CAMT.053.001.02 demos, using 0.5.0a2 and bankstatementparser 0.0.20.
+Every canonical account, statement and transaction field was compared, including
+nulls, order and counts. All booked amounts, signs, currencies, booking/value
+dates, account scopes and balances agree. All seven statements reconcile.
+
+| Exact demo profile | Observed result | Limits on use |
+| --- | --- | --- |
+| Goldman Sachs UETR demo, July 2024; USD/HUF; IBAN; explicit reporting period | Five transactions and two empty statements; all 83 scalar canonical fields match. | Original multi-statement document is rejected; tested statements were split and serialized. Input was previously reconstructed from the bank's webpage. Foreign/instructed amounts and extension fields are outside this comparison. |
+| Handelsbanken Swedish account-statement example, December 2012; SEK/NOK; BBAN; balance-date period | Five transactions and one empty statement; counts and financial fields agree; seven narrative/reference differences. | Original multi-statement document is rejected. `AddtlNtryInf` is not mapped to description; entry-level `AcctSvcrRef` is not used as the canonical reference fallback. |
+| Rabobank SWIFT FileAct 2024 archive, CAMT.053 example dated 14 January 2019; EUR; IBAN; balance-date period | Original single-statement file parses all 41 transactions; 37 differences against source-identity expectations. | Nineteen reference differences follow documented backend narrative precedence; six reflect absent entry-reference fallback. Six returns have a counterparty name but omit that party's account ID/IBAN (12 fields). Do not rely on complete counterparty identities for these returns. |
+
+These are bank-published **demonstrations**, not authenticated production exports.
+Expectations were frozen before this comparison and are independent of parser
+output, but have no independent second-review sign-off. There are no held-out
+exports. Thus no bank profile is yet certified under the conformance plan.
+Successful validation alone does not establish full field extraction. Existing
+format conventions below remain the supported runtime contract; the table records
+observed compatibility and exclusions, not a new bank-wide guarantee.
+
+**Unreleased fixes, checked against the same frozen expectations:** all five
+Handelsbanken descriptions, eight entry-reference fallbacks and twelve Rabobank
+return-account fields now match. GS and Handelsbanken have no canonical field
+differences. Rabobank retains nineteen reference-policy differences because
+the documented backend narrative precedence is unchanged. All 51 transactions
+still match booked amounts, dates, currencies and order; all seven statements
+reconcile. This does not add independent reviewer sign-off or held-out coverage.
 
 ## Install and scope
 
@@ -95,9 +154,15 @@ a count check. In 0.5.0a2, ordered composite keys (booked amount,
 currency, direction, account, booking/value dates, EndToEndId and AcctSvcrRef)
 must also agree before enrichment. Reordered or changed records raise
 `TRANSACTION_ALIGNMENT_MISMATCH`; indistinguishable source keys raise
-`AMBIGUOUS_TRANSACTION_ALIGNMENT`, including repeated charges without enough
-distinguishing evidence. Counts alone are insufficient. No automatic reordering
-or deduplication occurs. The declared account currency is preserved independently of entry
+`AMBIGUOUS_TRANSACTION_ALIGNMENT`. In the unreleased checkout, repeated keys
+are accepted only if all source enrichment fields are equivalent after ignoring
+source-path values and all backend fallback fields used for mapping agree.
+Their output records remain separate and retain their individual source paths.
+Conflicting metadata remains an explicit `AMBIGUOUS_TRANSACTION_ALIGNMENT` once
+every ordered financial key matches. If financial keys and metadata both differ,
+`TRANSACTION_ALIGNMENT_MISMATCH` takes precedence at the first mismatched row;
+counts alone are insufficient. No automatic reordering or deduplication occurs.
+The declared account currency is preserved independently of entry
 and balance currencies, so contradictions fail `CURRENCY_CONSISTENCY` validation.
 Entries require status `BOOK`, in either direct `Sts` or wrapped `Sts/Cd` form;
 missing, pending, informational or unknown statuses raise
@@ -109,8 +174,57 @@ the fixture verifies the wrapped creditor form. `reference` prioritizes a
 meaningful EndToEndId, then the backend reference, then AcctSvcrRef. Other payment
 references and structured remittance references remain in raw metadata. Only the
 documented namespace/version has corpus coverage; this is not full ISO 20022/XSD
-validation. Multi-detail conservation remains an upstream check and has no
-independent batch fixture in this release.
+validation. In the published 0.5.0a2 baseline, multi-detail conservation is an
+upstream check. The unreleased wrapper also enforces it independently, with
+synthetic coverage described below.
+
+In the **unreleased checkout**, entries and balances require one booked Amt
+and exactly one literal CRDT/DBIT CdtDbtInd. Absent detail directions inherit the
+entry direction; present blank, unknown or duplicate directions are rejected.
+A single detail must agree with its entry's direction. Balances require explicit
+amount currency; entries may fall back to the declared account currency.
+Missing/duplicate supported amounts and amount containers are rejected before
+backend extraction, including duplicate equal values. This closes confirmed
+baseline acceptance of unknown balance directions, duplicate entry amounts and
+blank detail directions; the pinned backend already rejects invalid nonblank
+transaction directions and nonconserving batches.
+
+For every multi-detail entry, the signed detail sum must equal the signed booked
+entry amount. This is checked even without balances and cannot be bypassed by
+offsetting errors in different entries. Each detail needs a unique numeric booked
+amount among Amt, AmtDtls/TxAmt/Amt and AmtDtls/CntrValAmt/Amt candidates in the
+entry's currency (missing candidate currency inherits the entry currency).
+Numerically equal candidates with different decimal scales are allowed; foreign
+candidates are excluded, and InstdAmt is never a booked candidate. Mixed-direction
+batches use signed conservation; reversal flags do not invert the reported sign
+again. A single detail retains the whole booked entry amount, even when its
+foreign/instructed metadata differs. No exchange rate is inferred.
+
+Raw metadata adds entry_amount (non-negative source magnitude), entry_currency
+(effective booked currency), entry_direction and optional amount_details.
+Each amount_details item records a supported detail source_path, exact unsigned
+amount and explicitly supplied currency (null when absent); its path identifies
+whether it is TxAmt, CntrValAmt, InstdAmt or a direct Amt. Canonical transaction
+amount/currency remain the signed account-booked values. Raw entry information
+and existing source paths retain the entry/detail relationship. Raw keys are
+additive; public dataclass fields, function signatures and schema 1.1 are unchanged.
+These are bounded synthetic tests, not additional bank-profile certification or
+full FX/ISO 20022 support. See the API error table for the new source errors.
+
+In the **unreleased checkout**, absent/blank unstructured remittance falls back
+to detail AddtlTxInf, then entry AddtlNtryInf. Entry-level AcctSvcrRef is retained
+in raw metadata and becomes the final canonical reference fallback, after the
+existing candidates above. Counterparty fields use one debtor/creditor role:
+prefer debtor on a credit and creditor on a debit, falling back to the other
+role only when the preferred role has no name or account identifiers. Names and
+accounts are never assembled from different roles. Zero amounts use CdtDbtInd
+to select the preferred role. On returns, role labels can describe the original
+payment; these fields are not a new interpretation of the direction of money.
+If the selected role has a name but no account identifiers, those identifiers
+remain null even when the other role has an account. Likewise, an account-only
+role keeps a null name. Missing descriptions and references stay null when no
+supported source fallback is present. These metadata fallbacks do not change
+booked amounts, dates, currencies, account scope or transaction ordering.
 
 In 0.5.0a2, reporting-period bounds prefer explicit FrToDt/FrDtTm
 and ToDtTm, preserving source-local dates; each absent bound falls back to the
@@ -229,3 +343,15 @@ neither operation changes the caller's settings.
 
 These checks do not establish document authenticity, duplicate-import safety,
 continuity between statements, or reconciliation against an accounting ledger.
+
+
+### Unreleased explicit CSV profiles
+
+The default CSV corpus and ambiguity rules remain compatible. Optional mappings,
+generic-date roles, explicit currency fallback/constraint, physical header
+selection, declared encodings and data-only profiles are described in
+[CSV profiles](csv-profiles.md). Five synthetic exporter layouts have independent
+full account/statement/transaction expectations. This adds no production profile
+certification. Configured raw provenance and CONFIGURED_CURRENCY are additive;
+canonical schema remains 1.1. The optional adapter's normalization/count check
+continues to share native extraction rather than providing independent agreement.

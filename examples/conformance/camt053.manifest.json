@@ -1,0 +1,39 @@
+{
+  "manifest_schema_version": "1",
+  "profile": {
+    "id": "synthetic-camt053",
+    "version": "1",
+    "exporter": "independently invented BankParser corpus",
+    "format": "camt053",
+    "format_version": "camt.053.001.02",
+    "implementation": "bankstatementparser",
+    "csv_options": null,
+    "settings": {
+      "encoding": "UTF-8",
+      "account_type": "synthetic bank account",
+      "currency": "GBP",
+      "locale": "synthetic ISO dates",
+      "date_convention": "booking/value meanings in corpus PROVENANCE.md",
+      "amount_convention": "exact signed account-booked amounts; format source conventions apply"
+    }
+  },
+  "samples": [
+    {
+      "id": "basic-valid-camt053",
+      "source": "../../corpus/camt053/basic_valid.camt053.xml",
+      "source_sha256": "6dccbec7e1dc7600081870e7b9b45b5c29915d474f26d77fa3b7b7eb0314b5b7",
+      "expected": "camt053.expected.json",
+      "expected_sha256": "46a921933da0a3a4eb67c827eb15ac67b0aef3e096db3e013ee743e252c8e0cf",
+      "evidence": {
+        "kind": "synthetic",
+        "cohort": "development",
+        "permission": "independently invented; repository MIT license",
+        "expectation_author": "independent synthetic corpus authors",
+        "expectation_method": "Copied account/statement/transactions from the existing independently authored corpus golden, without invoking BankParser; see corpus/PROVENANCE.md",
+        "independent_reviewer": null,
+        "held_out_untouched": false
+      },
+      "policy_differences": []
+    }
+  ]
+}

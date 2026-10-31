@@ -300,10 +300,71 @@ consistency on that input, not correctness.
 
 Comparison requires at least two configured implementations and their installed
 dependencies; explicit selection runs only the selected implementations, and
-parser errors abort comparison. The CLI exits `0` for a completed
-comparison, including one with differences. Inspect the JSON `matches` field in
-automation. `implementations(format)` lists configured names, even when an
-optional dependency is absent.
+parser errors abort comparison. By default the CLI exits `0` for a completed
+comparison, including one with differences. Add `--fail-on-diff` to exit `4` when
+`matches` is false; the complete comparison JSON is still written to stdout.
+Loading, detection, dependency, option and parsing/comparison errors exit `2`
+with no report on stdout. Add `--json-errors` for structured errors on stderr.
+These switches can be combined for CI:
+
+```bash
+bankparser compare corpus/mt940/basic_valid.mt940 --fail-on-diff --json-errors
+```
+
+Comparison exit codes are `0` for completion (or a match when using
+`--fail-on-diff`), `4` for an opted-in mismatch and `2` for an error. Exit `3`
+remains specific to parse validation. Equal validation failures or warnings can
+still compare equal; comparison is not an import-readiness check.
+`implementations(format)` lists configured names, even when an optional
+dependency is absent.
+
+## Destination import readiness
+
+Assess the requirements of an import destination separately from parsing:
+
+```python
+from bankparser import ImportPolicy, assess_import, parse
+
+assessment = assess_import(parse("corpus/csv/basic_valid.csv"), ImportPolicy())
+print(assessment.status)  # ready / review / not-ready
+```
+
+The assessor reports structured reasons, blocks failed financial checks and
+flags candidate repeats without deleting transactions. Confirmed destination
+account context stays separate from source facts. Optional missing balances need
+not block a movements-only destination. The CLI `bankparser assess FILE` supports
+versioned policy JSON and exits 0/5/6 for ready/review/not-ready. See
+[import readiness](docs/import-readiness.md) for defaults and bounded guarantees.
+
+## CSV exporter profiles
+
+Use explicit source-header mappings or versioned data-only CSV profiles:
+
+```python
+from bankparser import load_csv_profile, parse
+
+profile = load_csv_profile("examples/csv-profiles/euro-split.profile.json")
+result = parse("examples/csv-profiles/euro-split.csv", csv_profile=profile)
+```
+
+The same configuration works in CLI parse/compare with `--csv-profile FILE`, or
+explicit `--map SOURCE=FIELD` flags. See [CSV profiles](docs/csv-profiles.md) for
+header/encoding controls, currency fallback versus constraint, provenance and
+five synthetic examples. Existing generic CSV behavior remains the default.
+
+## Sample conformance
+
+Compare parser output with independently reviewed, frozen expectations:
+
+```bash
+PYTHONPATH=src python scripts/check_conformance.py examples/conformance/native-csv.manifest.json --json /tmp/conformance.json --markdown /tmp/conformance.md
+```
+
+The source-distribution runner checks file hashes, ordered canonical fields,
+counts and per-currency totals, and records policy differences and skipped
+production/review/held-out evidence. It neither authors expected answers nor
+certifies bank profiles. Reports contain financial data. See the
+[conformance guide](docs/conformance.md) for schemas, private intake and exits.
 
 ## Development
 

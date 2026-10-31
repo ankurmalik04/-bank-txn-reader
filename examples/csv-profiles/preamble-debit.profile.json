@@ -1,0 +1,18 @@
+{
+  "profile_schema_version": "1",
+  "id": "synthetic-preamble-debit",
+  "version": "1",
+  "format": "csv",
+  "options": {
+    "columns": {
+      "Posted": "booking_date",
+      "Valued": "value_date",
+      "Out": "debit",
+      "Unit": "currency",
+      "Local account": "account_id",
+      "International account": "iban"
+    },
+    "header_row": 4,
+    "delimiter": ","
+  }
+}

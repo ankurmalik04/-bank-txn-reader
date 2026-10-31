@@ -2,19 +2,18 @@
 
 from __future__ import annotations
 
-import csv
-import io
 import re
-from collections.abc import Iterator
 from datetime import date, datetime, timezone
 from decimal import Decimal
 
-from bankparser.detection.csv import CSV_COLUMN_GROUPS, csv_header, normalize_csv_header
+from bankparser.detection.csv import normalize_csv_header
 from bankparser.errors import ParseError
 from bankparser.models import Account, Statement, Transaction, Warning
 from bankparser.options import CsvOptions
 from bankparser.parsers.base import CanonicalData, ParseContext
 from bankparser.version import __version__
+
+from .source import columns, read_layout, source_rows
 
 
 class NativeCsvAdapter:
@@ -29,20 +28,9 @@ class NativeCsvAdapter:
 
     def parse(self, data: bytes, context: ParseContext) -> CanonicalData:
         options = context.csv_options or CsvOptions()
-        headers, rows = _read_source(data)
-        columns = _columns(headers)
-        if "amount" in columns and ("debit" in columns or "credit" in columns):
-            raise ParseError(
-                "Choose Amount or Debit/Credit columns, not both",
-                code="AMBIGUOUS_COLUMNS",
-                location="CSV header",
-            )
-        if not any(name in columns for name in ("amount", "debit", "credit")):
-            raise ParseError(
-                "CSV requires Amount or Debit/Credit columns",
-                code="MISSING_AMOUNT",
-                location="CSV header",
-            )
+        layout = read_layout(data, options)
+        columns = layout.columns
+        rows = source_rows(layout)
         transactions = []
         warnings = {
             warning.code: warning
@@ -57,17 +45,42 @@ class NativeCsvAdapter:
                 ),
             )
         }
-        scope: tuple[str | None, str | None] | None = None
+        scope: tuple[str | None, str | None, str | None] | None = None
         start_date: date | None = None
         end_date: date | None = None
-        for line, row in rows:
+        for start_line, end_line, row in rows:
 
             def cell(name: str, row: dict[str, str] = row) -> str:
                 return row.get(columns.get(name, ""), "").strip()
 
-            currency = cell("currency").upper() or None
-            account_id = cell("account_id") or None
-            row_scope = (account_id, currency)
+            source_currency = cell("currency").upper() or None
+            currency = source_currency or options.default_currency
+            if (
+                options.expected_currency is not None
+                and currency != options.expected_currency
+            ):
+                raise ParseError(
+                    "CSV currency is missing or conflicts with expected_currency",
+                    code="CSV_CURRENCY_CONSTRAINT",
+                    location=f"CSV line {start_line}, currency",
+                )
+            if source_currency is None and options.default_currency is not None:
+                warnings.setdefault(
+                    "CONFIGURED_CURRENCY",
+                    Warning(
+                        "CONFIGURED_CURRENCY",
+                        "Missing source currency filled by explicit default_currency",
+                        f"CSV line {start_line}, currency",
+                    ),
+                )
+            account_id = cell("account_id") or cell("iban") or None
+            iban = cell("iban") or (
+                account_id
+                if options.columns is None
+                and normalize_csv_header(columns.get("account_id", "")) == "iban"
+                else None
+            )
+            row_scope = (account_id, iban, currency)
             if scope is None:
                 scope = row_scope
             elif scope != row_scope:
@@ -77,12 +90,12 @@ class NativeCsvAdapter:
                     location="CSV account/currency columns",
                 )
             if "amount" in columns:
-                amount = _amount(cell("amount"), options, line, columns["amount"])
+                amount = _amount(cell("amount"), options, start_line, columns["amount"])
             else:
                 movements = {}
                 for name in ("debit", "credit"):
                     movements[name] = (
-                        _amount(cell(name), options, line, columns[name])
+                        _amount(cell(name), options, start_line, columns[name])
                         if cell(name)
                         else Decimal(0)
                     )
@@ -90,19 +103,19 @@ class NativeCsvAdapter:
                         raise ParseError(
                             "Debit/Credit cells must be non-negative magnitudes; use a signed Amount column",
                             code="SIGNED_DEBIT_CREDIT",
-                            location=f"CSV line {line}, column {columns[name]!r}",
+                            location=f"CSV line {start_line}, column {columns[name]!r}",
                         )
                 if not cell("debit") and not cell("credit"):
                     raise ParseError(
                         "Transaction has no amount",
                         code="MISSING_AMOUNT",
-                        location=f"CSV line {line}",
+                        location=f"CSV line {start_line}",
                     )
                 if movements["debit"] and movements["credit"]:
                     raise ParseError(
                         "Both Debit and Credit are non-zero",
                         code="AMBIGUOUS_MOVEMENT",
-                        location=f"CSV line {line}",
+                        location=f"CSV line {start_line}",
                     )
                 amount = (
                     movements["credit"]
@@ -124,7 +137,7 @@ class NativeCsvAdapter:
                         Warning(
                             "UNPARSED_TRANSACTION_DATE",
                             "Date is invalid or ambiguous; set CsvOptions.date_format",
-                            f"CSV line {line}, column {columns[name]!r}",
+                            f"CSV line {start_line}, column {columns[name]!r}",
                         ),
                     )
             if cell("date"):
@@ -133,7 +146,7 @@ class NativeCsvAdapter:
                     Warning(
                         "AMBIGUOUS_DATE_SEMANTICS",
                         "Generic Date is preserved but is not a booking or value date",
-                        f"CSV line {line}, column {columns['date']!r}",
+                        f"CSV line {start_line}, column {columns['date']!r}",
                     ),
                 )
             if cell("balance"):
@@ -142,14 +155,40 @@ class NativeCsvAdapter:
                     Warning(
                         "CSV_BALANCE_ORDER_UNKNOWN",
                         "Running balance is preserved; its ordering and timing are unknown",
-                        f"CSV line {line}, column {columns['balance']!r}",
+                        f"CSV line {start_line}, column {columns['balance']!r}",
                     ),
                 )
-            raw = {"source_line": line, "source_fields": row}
+            # Preserve the legacy ending line; record diagnostics use start_line.
+            raw = {"source_line": end_line, "source_fields": row}
+            if start_line != end_line:
+                raw["source_line_start"] = start_line
             if cell("date"):
                 raw["source_date"] = cell("date")
             if cell("balance"):
                 raw["source_balance"] = cell("balance")
+            if (
+                context.csv_options is not None
+                and options != CsvOptions()
+                or context.csv_profile is not None
+            ):
+                raw["source_line_start"] = start_line
+                raw["csv_configuration"] = {
+                    "options": options.to_dict(),
+                    "header_start_line": layout.header_start,
+                    "header_end_line": layout.header_end,
+                    "currency_origin": "source"
+                    if source_currency
+                    else (
+                        "configured-default" if options.default_currency else "missing"
+                    ),
+                    "profile": {
+                        "id": context.csv_profile.id,
+                        "version": context.csv_profile.version,
+                        "sha256": context.csv_profile.sha256,
+                    }
+                    if context.csv_profile
+                    else None,
+                }
             transactions.append(
                 Transaction(
                     booking_date=parsed_dates["booking_date"],
@@ -169,7 +208,7 @@ class NativeCsvAdapter:
                 code="EMPTY_STATEMENT",
                 location="CSV header",
             )
-        account_id, currency = scope or (None, None)
+        account_id, iban, currency = scope or (None, None, None)
         if currency is None:
             warnings["MISSING_CURRENCY"] = Warning(
                 "MISSING_CURRENCY", "Statement currency is unavailable"
@@ -178,9 +217,7 @@ class NativeCsvAdapter:
         return CanonicalData(
             account=Account(
                 id=account_id,
-                iban=account_id
-                if normalize_csv_header(columns.get("account_id", "")) == "iban"
-                else None,
+                iban=iban,
                 currency=currency,
             ),
             statement=Statement(
@@ -192,67 +229,8 @@ class NativeCsvAdapter:
         )
 
 
-def _read_source(
-    data: bytes,
-) -> tuple[tuple[str, ...], Iterator[tuple[int, dict[str, str]]]]:
-    detected = csv_header(data)
-    if detected is None:
-        raise ParseError(
-            "CSV must have recognizable headers and UTF-8 encoding",
-            code="INVALID_CSV",
-            location="CSV header",
-        )
-    delimiter, headers = detected
-    return headers, _source_rows(data, delimiter, headers)
-
-
-def _source_rows(
-    data: bytes, delimiter: str, headers: tuple[str, ...]
-) -> Iterator[tuple[int, dict[str, str]]]:
-    try:
-        with io.TextIOWrapper(
-            io.BytesIO(data), encoding="utf-8-sig", newline=""
-        ) as source:
-            reader = csv.reader(source, delimiter=delimiter, strict=True)
-            for cells in reader:
-                if cells and any(cell.strip() for cell in cells):
-                    break
-            for cells in reader:
-                if not cells or not any(cell.strip() for cell in cells):
-                    continue
-                if len(cells) != len(headers):
-                    raise ParseError(
-                        f"Expected {len(headers)} CSV cells, received {len(cells)}",
-                        code="INVALID_CSV_ROW",
-                        location=f"CSV line {reader.line_num}",
-                    )
-                yield reader.line_num, dict(zip(headers, cells))
-    except (UnicodeDecodeError, csv.Error) as exc:
-        raise ParseError("Invalid CSV quoting or encoding", code="INVALID_CSV") from exc
-
-
 def _columns(headers: tuple[str, ...]) -> dict[str, str]:
-    mapped = {}
-    normalized = set()
-    for header in headers:
-        name = normalize_csv_header(header)
-        if not name or name in normalized:
-            raise ParseError(
-                "CSV headers must be non-empty and unique",
-                code="AMBIGUOUS_COLUMNS",
-                location=f"CSV header {header!r}",
-            )
-        normalized.add(name)
-        for logical, candidates in CSV_COLUMN_GROUPS.items():
-            if name in candidates:
-                if logical in mapped:
-                    raise ParseError(
-                        f"Multiple CSV columns map to {logical}",
-                        code="AMBIGUOUS_COLUMNS",
-                        location=f"CSV header {header!r}",
-                    )
-                mapped[logical] = header
-    return mapped
+    return columns(headers)
 
 
 def _amount(text: str, options: CsvOptions, line: int, column: str) -> Decimal:

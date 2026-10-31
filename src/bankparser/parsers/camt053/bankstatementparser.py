@@ -60,6 +60,7 @@ class BankStatementParserCamt053Adapter:
             )
         statement_node = statements[0]
         _validate_source(statement_node)
+        source_transactions = _source_transactions(statement_node)
         try:
             transaction_records = parser.get_transactions().to_dict("records")
             balance_records = parser.get_account_balances().to_dict("records")
@@ -68,7 +69,6 @@ class BankStatementParserCamt053Adapter:
             raise ParseError(
                 f"bankstatementparser CAMT.053 parser failed: {exc}"
             ) from exc
-        source_transactions = _source_transactions(statement_node)
         if len(source_transactions) != len(transaction_records):
             raise ParseError(
                 "CAMT.053 source and parser transaction counts differ",
@@ -162,14 +162,27 @@ def _map_transaction(
     amount = _required_decimal(record.get("Amount"))
     debtor = source.get("debtor") or _text(record.get("Debtor"))
     creditor = source.get("creditor") or _text(record.get("Creditor"))
-    counterparty_name = debtor if amount > 0 else creditor
-    counterparty_name = counterparty_name or debtor or creditor
+    names = {"debtor": debtor, "creditor": creditor}
+    role = (
+        "debtor"
+        if amount > 0 or (amount == 0 and _text(record.get("DrCr")) == "CRDT")
+        else "creditor"
+    )
+    # Returns can retain only the original payment party. Select one role for
+    # all fields, and do not borrow another party's name for an unnamed account.
+    if not any(
+        (names[role], source.get(f"{role}_account"), source.get(f"{role}_iban"))
+    ):
+        role = "creditor" if role == "debtor" else "debtor"
 
     end_to_end_id = _meaningful_reference(record.get("EndToEndId"))
+    account_servicer_reference = _meaningful_reference(
+        record.get("AcctSvcrRef")
+    ) or _meaningful_reference(source.get("account_servicer_reference"))
     reference = _first_not_none(
         end_to_end_id,
         _text(record.get("Reference")),
-        _text(record.get("AcctSvcrRef")),
+        account_servicer_reference,
     )
     raw = {
         key: value
@@ -178,7 +191,7 @@ def _map_transaction(
             "debtor": debtor,
             "creditor": creditor,
             "end_to_end_id": end_to_end_id,
-            "account_servicer_reference": _text(record.get("AcctSvcrRef")),
+            "account_servicer_reference": account_servicer_reference,
             **{key: value for key, value in source.items() if key != "_alignment"},
         }.items()
         if value is not None
@@ -191,11 +204,9 @@ def _map_transaction(
         currency=_currency(record.get("Currency")) or statement_currency,
         description=source.get("description"),
         counterparty=Counterparty(
-            name=counterparty_name,
-            account_id=source.get(
-                "debtor_account" if amount > 0 else "creditor_account"
-            ),
-            iban=source.get("debtor_iban" if amount > 0 else "creditor_iban"),
+            name=names[role],
+            account_id=source.get(f"{role}_account"),
+            iban=source.get(f"{role}_iban"),
         ),
         reference=reference,
         transaction_id=_meaningful_reference(source.get("transaction_id")),
@@ -212,15 +223,111 @@ def _validate_source(statement: Any) -> None:
                 code="SIGNED_CAMT_AMOUNT",
                 location=f"Stmt//Amt[{index}]",
             )
+    for index, balance in enumerate(statement.findall("Bal"), start=1):
+        location = f"Stmt/Bal[{index}]"
+        _one_amount(balance, "Amt", location=location)
+        _source_direction(balance, location=location)
+        if not _currency(balance.find("Amt").get("Ccy")):
+            raise ParseError(
+                "CAMT balance lacks an explicit currency",
+                code="MISSING_CAMT_CURRENCY",
+                location=location + "/Amt/@Ccy",
+            )
     for index, entry in enumerate(statement.findall("Ntry"), start=1):
+        location = f"Stmt/Ntry[{index}]"
+        amount = _one_amount(entry, "Amt", location=location)
+        direction = _source_direction(entry, location=location)
+        currency = _currency(amount.get("Ccy")) or _currency(
+            _element_text(statement, "./Acct/Ccy")
+        )
+        if currency is None:
+            raise ParseError(
+                "CAMT entry lacks a booked currency",
+                code="MISSING_CAMT_CURRENCY",
+                location=location + "/Amt/@Ccy",
+            )
         status = _element_text(entry, "./Sts/Cd") or _element_text(entry, "./Sts")
         if status != "BOOK":
             raise ParseError(
                 "CAMT.053 requires booked entries; "
                 f"unsupported entry status {status!r}",
                 code="UNSUPPORTED_ENTRY_STATUS",
-                location=f"Stmt/Ntry[{index}]/Sts",
+                location=location + "/Sts",
             )
+        details = entry.findall(".//TxDtls")
+        total = Decimal(0)
+        for detail_index, detail in enumerate(details, start=1):
+            detail_location = location + f"/NtryDtls/TxDtls[{detail_index}]"
+            detail_direction = _source_direction(
+                detail, location=detail_location, fallback=direction
+            )
+            if len(details) == 1 and detail_direction != direction:
+                raise ParseError(
+                    "CAMT detail direction conflicts with its booked entry",
+                    code="CAMT_DIRECTION_CONFLICT",
+                    location=detail_location + "/CdtDbtInd",
+                )
+            _detail_amount_nodes(detail, location=detail_location)
+            if len(details) > 1:
+                total += _source_alignment(
+                    statement, entry, detail, batched=True, location=detail_location
+                )["Amount"]
+        booked = _required_decimal(amount.text)
+        if direction == "DBIT":
+            booked = booked.copy_negate()
+        if len(details) > 1 and total != booked:
+            raise ParseError(
+                "CAMT detail amounts do not conserve their signed booked entry total",
+                code="CAMT_BATCH_TOTAL_MISMATCH",
+                location=location,
+            )
+
+
+def _source_direction(node: Any, *, location: str, fallback: str | None = None) -> str:
+    nodes = node.findall("CdtDbtInd")
+    if not nodes and fallback is not None:
+        return fallback
+    if len(nodes) != 1 or nodes[0].text not in {"CRDT", "DBIT"}:
+        raise ParseError(
+            "CAMT requires one CRDT or DBIT direction; only absent detail directions inherit",
+            code="INVALID_CAMT_DIRECTION",
+            location=location + "/CdtDbtInd",
+        )
+    return str(nodes[0].text)
+
+
+def _one_amount(node: Any, path: str, *, location: str) -> Any:
+    nodes = node.findall(path)
+    if len(nodes) != 1:
+        raise ParseError(
+            "CAMT requires exactly one amount at the supported source path",
+            code="INVALID_CAMT_AMOUNT_STRUCTURE",
+            location=location + "/" + path,
+        )
+    return nodes[0]
+
+
+def _detail_amount_nodes(detail: Any, *, location: str) -> list[tuple[str, Any]]:
+    for path in ("AmtDtls", "AmtDtls/TxAmt", "AmtDtls/CntrValAmt", "AmtDtls/InstdAmt"):
+        if len(detail.findall(path)) > 1:
+            raise ParseError(
+                "CAMT detail contains duplicate amount containers",
+                code="INVALID_CAMT_AMOUNT_STRUCTURE",
+                location=location + "/" + path,
+            )
+    amounts = []
+    for path in (
+        "Amt",
+        "AmtDtls/TxAmt/Amt",
+        "AmtDtls/CntrValAmt/Amt",
+        "AmtDtls/InstdAmt/Amt",
+    ):
+        parent_path = path.rpartition("/")[0]
+        if detail.findall(path) or (
+            parent_path and detail.find(parent_path) is not None
+        ):
+            amounts.append((path, _one_amount(detail, path, location=location)))
+    return amounts
 
 
 def _source_transactions(statement: Any) -> list[dict[str, Any]]:
@@ -239,7 +346,13 @@ def _source_transactions(statement: Any) -> list[dict[str, Any]]:
                     for node in narrative
                     if node.text and node.text.strip()
                 )
-                or None,
+                or _element_text(detail, "./AddtlTxInf")
+                or _element_text(entry, "./AddtlNtryInf"),
+                "account_servicer_reference": _first_not_none(
+                    _meaningful_reference(_element_text(detail, "./Refs/AcctSvcrRef")),
+                    _meaningful_reference(_element_text(detail, "./AcctSvcrRef")),
+                    _meaningful_reference(_element_text(entry, "./AcctSvcrRef")),
+                ),
                 "structured_references": tuple(
                     node.text.strip()
                     for node in structured_refs
@@ -256,8 +369,31 @@ def _source_transactions(statement: Any) -> list[dict[str, Any]]:
                 or None,
             }
             record["_alignment"] = _source_alignment(
-                statement, entry, detail, batched=len(details) > 1
+                statement,
+                entry,
+                detail,
+                batched=len(details) > 1,
+                location=record["source_path"],
             )
+            record["entry_amount"] = _required_decimal(entry.find("Amt").text)
+            record["entry_currency"] = record["_alignment"]["Currency"]
+            record["entry_direction"] = _element_text(entry, "./CdtDbtInd")
+            # Instructed/foreign/countervalue magnitudes remain source metadata;
+            # they never replace the signed account-booked canonical amount.
+            if details:
+                record["amount_details"] = (
+                    tuple(
+                        {
+                            "source_path": record["source_path"] + "/" + path,
+                            "amount": _required_decimal(node.text),
+                            "currency": _currency(node.get("Ccy")),
+                        }
+                        for path, node in _detail_amount_nodes(
+                            detail, location=record["source_path"]
+                        )
+                    )
+                    or None
+                )
             for role, tag in (("debtor", "Dbtr"), ("creditor", "Cdtr")):
                 record[role] = _first_not_none(
                     _element_text(detail, f"./RltdPties/{tag}/Pty/Nm"),
@@ -285,7 +421,7 @@ def _source_transactions(statement: Any) -> list[dict[str, Any]]:
 
 
 def _source_alignment(
-    statement: Any, entry: Any, detail: Any, *, batched: bool
+    statement: Any, entry: Any, detail: Any, *, batched: bool, location: str
 ) -> dict[str, Any]:
     amount_node = entry.find("Amt")
     if amount_node is None:
@@ -309,7 +445,7 @@ def _source_alignment(
             raise ParseError(
                 "Cannot identify a unique booked detail amount",
                 code="TRANSACTION_ALIGNMENT_MISMATCH",
-                location="Stmt/Ntry/NtryDtls/TxDtls",
+                location=location,
             )
         amount = next(iter(candidates))
     direction = _element_text(detail, "./CdtDbtInd") or _element_text(
@@ -354,19 +490,60 @@ def _verify_alignment(
     sources: list[dict[str, Any]], records: list[dict[str, Any]]
 ) -> None:
     source_keys = [_alignment_key(source["_alignment"]) for source in sources]
-    if len(set(source_keys)) != len(source_keys):
-        raise ParseError(
-            "CAMT source records lack distinguishable identities for enrichment",
-            code="AMBIGUOUS_TRANSACTION_ALIGNMENT",
-            location="Stmt/Ntry",
-        )
-    for index, (expected, record) in enumerate(zip(source_keys, records), start=1):
+    # Financial identity/order must agree for every row before considering
+    # whether repeated identities can safely share enrichment metadata.
+    for index, (expected, record) in enumerate(zip(source_keys, records)):
         if expected != _alignment_key(record):
             raise ParseError(
                 "CAMT backend identity, financial fields or order differ from source",
                 code="TRANSACTION_ALIGNMENT_MISMATCH",
-                location=sources[index - 1]["source_path"],
+                location=sources[index]["source_path"],
             )
+    groups: dict[tuple[Any, ...], list[int]] = {}
+    for index, key in enumerate(source_keys):
+        groups.setdefault(key, []).append(index)
+    for indices in groups.values():
+        if len(indices) < 2:
+            continue
+        first = indices[0]
+        source_projection = _source_enrichment_projection(sources[first])
+        backend_projection = _backend_enrichment_projection(records[first])
+        if any(
+            _source_enrichment_projection(sources[index]) != source_projection
+            or _backend_enrichment_projection(records[index]) != backend_projection
+            for index in indices[1:]
+        ):
+            raise ParseError(
+                "Repeated CAMT identities have conflicting enrichment metadata",
+                code="AMBIGUOUS_TRANSACTION_ALIGNMENT",
+                location=sources[first]["source_path"],
+            )
+
+
+def _source_enrichment_projection(source: Mapping[str, Any]) -> tuple[Any, ...]:
+    """Project every source field used in output, ignoring only provenance paths."""
+    return tuple(
+        (key, _without_source_paths(value))
+        for key, value in source.items()
+        if key != "source_path" and key != "_alignment"
+    )
+
+
+def _without_source_paths(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        return tuple(
+            (key, _without_source_paths(item))
+            for key, item in value.items()
+            if key != "source_path"
+        )
+    if isinstance(value, (tuple, list)):
+        return tuple(_without_source_paths(item) for item in value)
+    return value
+
+
+def _backend_enrichment_projection(record: Mapping[str, Any]) -> tuple[str | None, ...]:
+    """Include backend fields consumed by mapping but absent from the identity key."""
+    return tuple(_text(record.get(key)) for key in ("Reference", "Debtor", "Creditor"))
 
 
 def _balance_currency(statement: Any, code: str) -> str | None:

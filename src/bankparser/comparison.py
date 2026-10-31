@@ -3,28 +3,34 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from decimal import Decimal, InvalidOperation, localcontext
 from os import PathLike
 from typing import Any
 
-from bankparser.api import _load_input, parse
+from bankparser.api import _csv_configuration, _input_format, _load_input, parse
 from bankparser.api import implementations as available_implementations
-from bankparser.detection import detect_format
 from bankparser.errors import ComparisonError
 from bankparser.models import ParseResult
 from bankparser.options import CsvOptions
+from bankparser.profiles import CsvProfile
 from bankparser.serialization import to_primitive
 
-_MISSING = "<missing>"
+_MISSING = object()
 
 
 @dataclass(frozen=True, slots=True)
 class ComparisonDifference:
-    """One canonical field that differs between parser implementations."""
+    """One canonical difference, with explicit presence for each implementation.
+
+    Absent paths have a None value and present=False. A sourced null has
+    present=True. The empty default preserves two-argument construction by
+    callers; reports produced here always populate every presence flag.
+    """
 
     path: str
     values: dict[str, Any]
+    present: dict[str, bool] = field(default_factory=dict)
 
 
 @dataclass(frozen=True, slots=True)
@@ -42,6 +48,8 @@ def compare(
     *,
     implementations: Sequence[str] | None = None,
     csv_options: CsvOptions | None = None,
+    csv_profile: CsvProfile | None = None,
+    format: str | None = None,
 ) -> ComparisonReport:
     """Run parser implementations and compare their canonical output.
 
@@ -52,7 +60,8 @@ def compare(
     """
     # Compare a single snapshot even if a path is replaced while backends run.
     data, _ = _load_input(source)
-    format_name = detect_format(data)
+    resolved_options = _csv_configuration(csv_options, csv_profile)
+    format_name = _input_format(data, csv_options=resolved_options, format=format)
     selected = tuple(
         dict.fromkeys(
             available_implementations(format_name)
@@ -66,7 +75,11 @@ def compare(
     results: dict[str, ParseResult] = {}
     for implementation in selected:
         results[implementation] = parse(
-            data, implementation=implementation, csv_options=csv_options
+            data,
+            implementation=implementation,
+            csv_options=csv_options,
+            csv_profile=csv_profile,
+            format=format,
         )
 
     return compare_results(results)
@@ -100,7 +113,18 @@ def compare_results(results: Mapping[str, ParseResult]) -> ComparisonReport:
             for name, value in values.items()
         }
         if len(keys) > 1:
-            differences.append(ComparisonDifference(path=path, values=values))
+            differences.append(
+                ComparisonDifference(
+                    path=path,
+                    values={
+                        name: None if value is _MISSING else value
+                        for name, value in values.items()
+                    },
+                    present={
+                        name: value is not _MISSING for name, value in values.items()
+                    },
+                )
+            )
 
     return ComparisonReport(
         format=next(iter(formats)),

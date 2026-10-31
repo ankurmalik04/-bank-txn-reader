@@ -80,6 +80,21 @@ class ValidationCheck:
     message: str
     expected: str | None = None
     actual: str | None = None
+    record_indices: tuple[int, ...] = field(
+        default=(), metadata={"diagnostic_only": True}
+    )
+    source_locations: tuple[str | None, ...] = field(
+        default=(), metadata={"diagnostic_only": True}
+    )
+    canonical_field: str | None = field(
+        default=None, metadata={"diagnostic_only": True}
+    )
+    guidance: str | None = field(default=None, metadata={"diagnostic_only": True})
+
+    @property
+    def severity(self) -> str:
+        """Map the existing validation status to a stable diagnostic severity."""
+        return {"passed": "info", "skipped": "warning", "failed": "error"}[self.status]
 
 
 @dataclass(frozen=True, slots=True)

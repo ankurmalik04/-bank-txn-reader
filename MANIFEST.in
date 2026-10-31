@@ -3,15 +3,21 @@ include docs/compatibility.md
 include docs/csv-onboarding.md docs/profile-evidence.md
 include docs/conformance-plan.md
 include docs/api.md docs/dependencies.md
+include docs/conformance-plan.md docs/conformance.md docs/csv-profiles.md docs/import-readiness.md
+recursive-include docs/schemas *.json
 include corpus/PROVENANCE.md
 include scripts/export_publication.py corpus/generate.py
 include scripts/inventory_dependencies.py
-include scripts/check_distribution.py scripts/check_install.py
+include scripts/check_distribution.py scripts/check_install.py scripts/check_conformance.py
 include docs/dependency-audit.md
 recursive-include docs/audits *.json *.txt
 recursive-include examples *.py
+recursive-include examples/conformance *.json
+recursive-include examples/csv-profiles *.json *.csv
+recursive-include examples/import-readiness *.json
 recursive-include examples/output *.json
 recursive-include corpus *.mt940 *.xml *.ofx *.qfx *.csv *.json
 recursive-include tests *.py
+recursive-include tests/fixtures *.xml *.xsd *.md
 prune docs/reviews
 exclude docs/code-review-2026-10-08.md

@@ -1,0 +1,3 @@
+Posting,Settlement,Text,Net,Unit,Wallet,Key,Ref,Amount
+2026-10-01,2026-10-02,Income,20.00,GBP,ACCT-A,ID-1,REF-1,ignored
+2026-10-02,2026-10-02,Shop,-3.50,GBP,ACCT-A,ID-2,REF-2,ignored
