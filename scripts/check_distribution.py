@@ -39,7 +39,6 @@ POLICIES = {
     "docs/schemas/csv-profile-v1.schema.json",
     "examples/csv-profiles/euro-split.profile.json",
     "examples/csv-profiles/euro-split.csv",
-    "docs/conformance-plan.md",
     "docs/schemas/conformance-manifest-v1.schema.json",
     "docs/schemas/conformance-expectation-v1.schema.json",
     "docs/schemas/conformance-report-v1.schema.json",

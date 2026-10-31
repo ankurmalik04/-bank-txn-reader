@@ -2,8 +2,9 @@
 
 Start with one account and one currency in a file under 5 MiB. Keep the original
 export and its exporter/version settings so you can explain every transformation.
-This guide covers released 0.5.0a2 first; the profile workflow below is proposed
-in [PR #6](https://github.com/ankurmalik04/-bank-txn-reader/pull/6).
+This guide covers released 0.5.0a2 first; the profile workflow below is available
+in the unreleased main checkout through merged
+[PR #6](https://github.com/ankurmalik04/-bank-txn-reader/pull/6).
 
 ## Establish the export's meanings
 
@@ -64,12 +65,13 @@ review. A passing arithmetic check does not establish complete extraction.
 | Duplicate headers, bad quoting, wrong cell count | Correct the exporter settings or document a reviewed conversion; preserve the original. |
 | Missing dependency | Native CSV uses the base install; installing all extras does not fix an ambiguous layout. |
 
-## Reuse a profile after the profile feature is available
+## Reuse a profile in the unreleased checkout
 
-The commands in this section require the changes proposed in
-[PR #6](https://github.com/ankurmalik04/-bank-txn-reader/pull/6); they are not
-0.5.0a2 commands. That PR includes five synthetic CSV/profile/expected-output
-triples and a detailed profile reference. In a checkout containing those changes:
+The commands in this section require the unreleased main checkout containing
+merged [PR #6](https://github.com/ankurmalik04/-bank-txn-reader/pull/6); they are
+not commands from the published 0.5.0a2 release. The checkout includes five
+synthetic CSV/profile/expected-output triples and a detailed
+[profile reference](csv-profiles.md):
 
 ```bash
 bankparser parse examples/csv-profiles/euro-split.csv --csv-profile examples/csv-profiles/euro-split.profile.json
@@ -90,8 +92,10 @@ caller-supplied context; it does not prove the export supplied a currency.
 Profiles are data, not executable parser plugins. Review and version a profile
 when the exporter changes; keep independent expectations for both versions.
 
-For repeatable evidence checking, [PR #5](https://github.com/ankurmalik04/-bank-txn-reader/pull/5)
-proposes a conformance runner and frozen expectation manifests. Freeze answers
+For repeatable evidence checking, merged
+[PR #5](https://github.com/ankurmalik04/-bank-txn-reader/pull/5) adds a
+[conformance runner](conformance.md) and frozen expectation manifests to the
+unreleased checkout. Freeze answers
 from the source before using the parser to compare them. Retain permission,
 independent-review and held-out declarations; neither a profile nor successful
 synthetic examples certifies a bank. See the [evidence matrix](profile-evidence.md)

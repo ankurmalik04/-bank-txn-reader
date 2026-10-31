@@ -178,7 +178,7 @@ before switching.
 For an unfamiliar export, follow the [CSV onboarding guide](docs/csv-onboarding.md)
 and run `PYTHONPATH=src python examples/csv_onboarding.py` from this checkout.
 The [format/profile evidence matrix](docs/profile-evidence.md) distinguishes
-released synthetic coverage, proposed reusable profiles and missing production evidence.
+released synthetic coverage, unreleased reusable profiles and missing production evidence.
 
 CSV retains Booking Date, Value Date, Transaction ID and Reference separately.
 Original cells, including unrecognised columns, remain in

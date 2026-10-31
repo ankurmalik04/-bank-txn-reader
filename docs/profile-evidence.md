@@ -1,7 +1,7 @@
 # Format and profile evidence
 
 This is a bounded evidence summary for 0.5.0a2 and the explicitly identified
-proposed features. It is not a bank compatibility directory. The
+unreleased features. It is not a bank compatibility directory. The
 [compatibility guide](compatibility.md) specifies the adapter boundaries and
 the [sample plan](conformance-plan.md) defines the remaining evidence milestone.
 
@@ -18,10 +18,11 @@ CSV and MT940 have optional bankstatementparser implementations; OFX has an
 alternative too. Backend agreement is a consistency observation, not independent
 proof of source extraction. Consult the compatibility guide before switching.
 
-## Proposed reusable CSV examples
+## Unreleased reusable CSV examples
 
-These five examples are in [PR #6](https://github.com/ankurmalik04/-bank-txn-reader/pull/6),
-not released 0.5.0a2. Each has invented source data and independently specified
+These five examples are in the unreleased main checkout through merged
+[PR #6](https://github.com/ankurmalik04/-bank-txn-reader/pull/6), not the published
+0.5.0a2 release. Each has invented source data and independently specified
 expectations. None is a production exporter certification.
 
 | Synthetic profile | Layout / convention | Evidence status |
@@ -42,8 +43,9 @@ Record exact exporter/version settings, permission, source and expectation
 hashes, author/reviewer and development/held-out cohort for each candidate. If a
 held-out sample drives a fix, move it into development and obtain a new held-out
 sample. Preserve disagreements, missing fields and explicit policy exceptions.
-The [proposed runner in PR #5](https://github.com/ankurmalik04/-bank-txn-reader/pull/5)
-records these declarations but cannot verify permission or certify their truth.
+The [conformance runner](conformance.md), added to the unreleased checkout by
+merged [PR #5](https://github.com/ankurmalik04/-bank-txn-reader/pull/5), records
+these declarations but cannot verify permission or certify their truth.
 
 Release CI checks versions, package contents, clean installation profiles,
 checksums and dependencies. Those checks concern a particular commit/artifact;

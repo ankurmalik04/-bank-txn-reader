@@ -1,7 +1,6 @@
 include .gitattributes LICENSE README.md CHANGELOG.md CONTRIBUTING.md SUPPORT.md SECURITY.md THIRD_PARTY_NOTICES.md
 include docs/compatibility.md
 include docs/csv-onboarding.md docs/profile-evidence.md
-include docs/conformance-plan.md
 include docs/api.md docs/dependencies.md
 include docs/conformance-plan.md docs/conformance.md docs/csv-profiles.md docs/import-readiness.md
 recursive-include docs/schemas *.json
