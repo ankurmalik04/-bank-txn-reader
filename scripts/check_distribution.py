@@ -10,6 +10,10 @@ from email.parser import BytesParser
 from pathlib import Path, PurePosixPath
 
 POLICIES = {
+    "docs/csv-onboarding.md",
+    "docs/profile-evidence.md",
+    "docs/conformance-plan.md",
+    "examples/csv_onboarding.py",
     ".gitattributes",
     "LICENSE",
     "README.md",
@@ -35,7 +39,6 @@ POLICIES = {
     "docs/schemas/csv-profile-v1.schema.json",
     "examples/csv-profiles/euro-split.profile.json",
     "examples/csv-profiles/euro-split.csv",
-    "docs/conformance-plan.md",
     "docs/schemas/conformance-manifest-v1.schema.json",
     "docs/schemas/conformance-expectation-v1.schema.json",
     "docs/schemas/conformance-report-v1.schema.json",
