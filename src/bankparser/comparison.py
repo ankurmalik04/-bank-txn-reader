@@ -8,8 +8,9 @@ from decimal import Decimal, InvalidOperation, localcontext
 from os import PathLike
 from typing import Any
 
-from bankparser.api import _csv_configuration, _input_format, _load_input, parse
+from bankparser._input import csv_configuration, input_format, load_input
 from bankparser.api import implementations as available_implementations
+from bankparser.api import parse
 from bankparser.errors import ComparisonError
 from bankparser.models import ParseResult
 from bankparser.options import CsvOptions
@@ -59,9 +60,9 @@ def compare(
     function never chooses a winning implementation.
     """
     # Compare a single snapshot even if a path is replaced while backends run.
-    data, _ = _load_input(source)
-    resolved_options = _csv_configuration(csv_options, csv_profile)
-    format_name = _input_format(data, csv_options=resolved_options, format=format)
+    data, _ = load_input(source)
+    resolved_options = csv_configuration(csv_options, csv_profile)
+    format_name = input_format(data, csv_options=resolved_options, format=format)
     selected = tuple(
         dict.fromkeys(
             available_implementations(format_name)
