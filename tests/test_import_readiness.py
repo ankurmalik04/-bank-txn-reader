@@ -985,3 +985,18 @@ def test_shipped_policy_examples_and_schema_fields_match_public_contract():
 def test_publicly_constructed_wrong_types_cannot_appear_ready(mutation):
     with pytest.raises(InputError):
         assess_import(mutation(result()), permissive())
+
+
+def test_pre_refactor_duplicate_review_token_remains_valid():
+    """Compatibility fixture captured before moving policy/fingerprint code."""
+    base = result()
+    repeated = replace(base, transactions=base.transactions * 2)
+    token = "3ef391236ce83045c660d5a17782bbadc343a7efe080297ab2c62a523c845d00"
+    assessed = assess_import(repeated, reviewed_duplicates=(token,))
+    assert assessed.result_fingerprint == (
+        "a160f4c45c8d12d1357ff20b748fade82fcd902c9cb28133bccc93dde40dc0be"
+    )
+    assert len(assessed.duplicate_candidates) == 1
+    assert assessed.duplicate_candidates[0].fingerprint == token
+    assert assessed.duplicate_candidates[0].reviewed
+    assert not any(reason.code == "DUPLICATE_CANDIDATE" for reason in assessed.reasons)

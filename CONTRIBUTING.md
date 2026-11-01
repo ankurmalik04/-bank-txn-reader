@@ -72,3 +72,11 @@ The wheel includes the Python package, type marker and MIT license. Check
 changes to public fields and CLI exit codes against `CHANGELOG.md` before
 releasing. Run `python scripts/check_distribution.py dist` to inspect built
 archives. Keep generated build artifacts and local financial data out of commits.
+
+Import assessment keeps its public entry points in `bankparser.readiness`.
+Internally, `_import_policy` owns policy/destination configuration and JSON
+loading, `_import_contract` validates caller-constructed inputs,
+`_import_duplicates` owns candidate grouping and review fingerprints, and
+`_import_models` defines assessment output models. Keep changes to these helpers
+independent of orchestration where possible. Preserve serialized assessment
+fields and existing review fingerprints during refactors.
