@@ -6,7 +6,6 @@ from decimal import MAX_EMAX, MIN_EMIN, Context, localcontext
 from functools import lru_cache
 from os import PathLike
 
-from bankparser._input import MAX_INPUT_BYTES as _MAX_INPUT_BYTES
 from bankparser._input import csv_configuration, input_format, load_input
 from bankparser.errors import BankParserError
 from bankparser.models import ParseResult, SourceMetadata, Warning
@@ -26,8 +25,8 @@ from bankparser.validation import validate
 from bankparser.version import __version__
 
 SCHEMA_VERSION = "1.1"
-# Retain the existing import location for callers and conformance tooling.
-MAX_INPUT_BYTES = _MAX_INPUT_BYTES
+# Authoritative input limit, also used by comparison's initial snapshot.
+MAX_INPUT_BYTES = 5 * 1024 * 1024
 
 
 def parse(
@@ -39,7 +38,7 @@ def parse(
     format: str | None = None,
 ) -> ParseResult:
     """Parse a supported bank statement into the canonical BankParser model."""
-    data, file_name = load_input(source)
+    data, file_name = load_input(source, max_bytes=MAX_INPUT_BYTES)
     csv_options = csv_configuration(csv_options, csv_profile)
     format = input_format(data, csv_options=csv_options, format=format)
     try:

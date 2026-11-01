@@ -10,10 +10,10 @@ from bankparser.errors import InputError, UnsupportedFormatError
 from bankparser.options import CsvOptions
 from bankparser.profiles import CsvProfile
 
-MAX_INPUT_BYTES = 5 * 1024 * 1024
 
-
-def load_input(source: str | PathLike[str] | bytes) -> tuple[bytes, str | None]:
+def load_input(
+    source: str | PathLike[str] | bytes, *, max_bytes: int
+) -> tuple[bytes, str | None]:
     if isinstance(source, bytes):
         data = source
         file_name = None
@@ -23,22 +23,22 @@ def load_input(source: str | PathLike[str] | bytes) -> tuple[bytes, str | None]:
             size = path.stat().st_size
         except OSError as exc:
             raise InputError(f"Unable to read input file {path}: {exc}") from exc
-        if size > MAX_INPUT_BYTES:
+        if size > max_bytes:
             raise InputError(
-                f"Input is too large ({size} bytes); maximum is {MAX_INPUT_BYTES} bytes"
+                f"Input is too large ({size} bytes); maximum is {max_bytes} bytes"
             )
         try:
             with path.open("rb") as source_file:
-                data = source_file.read(MAX_INPUT_BYTES + 1)
+                data = source_file.read(max_bytes + 1)
         except OSError as exc:
             raise InputError(f"Unable to read input file {path}: {exc}") from exc
         file_name = path.name
 
     if not data:
         raise InputError("Input file is empty")
-    if len(data) > MAX_INPUT_BYTES:
+    if len(data) > max_bytes:
         raise InputError(
-            f"Input is too large ({len(data)} bytes); maximum is {MAX_INPUT_BYTES} bytes"
+            f"Input is too large ({len(data)} bytes); maximum is {max_bytes} bytes"
         )
     return data, file_name
 

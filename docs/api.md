@@ -20,6 +20,12 @@ path (`str` or `os.PathLike`) or `bytes`. It detects format from content and
 returns `ParseResult`. Input must be non-empty and at most 5 MiB. File reads are
 bounded even if the file grows between the size check and reading.
 
+`bankparser.api.MAX_INPUT_BYTES` is the authoritative byte limit (default
+`5 * 1024 * 1024`). Applications and test tooling may override it before calling
+`parse()` or `compare()`; both operations use its current value for byte input,
+file size checks and bounded reads. This setting is process-wide, so configure
+it before starting concurrent calls.
+
 `implementation` selects a registered implementation for the detected format:
 
 | Format | Default | Alternative |
