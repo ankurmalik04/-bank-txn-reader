@@ -1,14 +1,17 @@
 """Reject ambiguous statement accounts before backend identity selection."""
 
 import importlib.util
+import json
 from copy import deepcopy
 from pathlib import Path
 from xml.etree import ElementTree as E
 
 import pytest
 
-from bankparser import ParseError, parse
+from bankparser import ParseError, diagnostic_for_error, parse
+from bankparser.cli import main
 from bankparser.parsers.camt053.bankstatementparser import _validate_source
+from bankparser.serialization import to_primitive
 
 
 def statement():
@@ -87,3 +90,43 @@ def test_missing_account_container_is_rejected():
         _validate_source(node)
     assert caught.value.code == "AMBIGUOUS_CAMT_ACCOUNT"
     assert caught.value.location == "Stmt/Acct"
+
+
+@pytest.mark.skipif(
+    importlib.util.find_spec("bankstatementparser") is None, reason="camt extra"
+)
+@pytest.mark.parametrize("json_errors", [False, True])
+def test_ambiguous_account_code_survives_redaction(tmp_path, capsys, json_errors):
+    node = statement()
+    account = deepcopy(node.find("Acct"))
+    account.find("Id/IBAN").text = "PRIVATE_ACCOUNT_829174"
+    node.append(account)
+    root = E.Element("Document", xmlns="urn:iso:std:iso:20022:tech:xsd:camt.053.001.02")
+    E.SubElement(root, "BkToCstmrStmt").append(node)
+    data = E.tostring(root)
+    with pytest.raises(ParseError) as caught:
+        parse(data)
+    expected = {
+        "diagnostic_schema_version": "1",
+        "code": "AMBIGUOUS_CAMT_ACCOUNT",
+        "severity": "error",
+        "format": "camt053",
+        "canonical_field": None,
+    }
+    assert to_primitive(
+        diagnostic_for_error(caught.value), policy="redacted-diagnostic"
+    ) == expected
+    path = tmp_path / "PRIVATE_FILENAME_829174.xml"
+    path.write_bytes(data)
+    argv = ["parse", str(path), "--output-policy", "redacted-diagnostic"]
+    if json_errors:
+        argv.append("--json-errors")
+    assert main(argv) == 2
+    output = capsys.readouterr()
+    assert output.out == ""
+    if json_errors:
+        assert json.loads(output.err) == {
+            "error": {"code": expected["code"], "diagnostic": expected}
+        }
+    else:
+        assert output.err == "bankparser: AMBIGUOUS_CAMT_ACCOUNT\n"
