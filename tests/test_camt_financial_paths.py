@@ -21,7 +21,7 @@ def document():
     return root
 
 
-@pytest.mark.parametrize("tag", ["Ntry", "Bal", "TxDtls"])
+@pytest.mark.parametrize("tag", ["Acct", "Ntry", "Bal", "TxDtls"])
 @pytest.mark.parametrize("move", [False, True])
 def test_misplaced_financial_node_is_rejected(tag, move):
     root = document()
@@ -63,7 +63,7 @@ def test_activity_outside_statement_is_rejected_by_public_api(parent_path):
 def test_foreign_extension_financial_names_are_not_camt_activity():
     root = document()
     extension = E.SubElement(root.find(".//Stmt"), "{urn:example:metadata}Extension")
-    for tag in ("Ntry", "Bal", "TxDtls"):
+    for tag in ("Acct", "Ntry", "Bal", "TxDtls"):
         E.SubElement(extension, "{urn:example:metadata}" + tag).text = "metadata"
     root.set("xmlns", "urn:iso:std:iso:20022:tech:xsd:camt.053.001.02")
     result = parse(E.tostring(root))
@@ -108,3 +108,32 @@ def test_financial_path_code_survives_redaction(tmp_path, capsys, json_errors):
         }
     else:
         assert output.err == "bankparser: INVALID_CAMT_FINANCIAL_STRUCTURE\n"
+
+
+@pytest.mark.skipif(
+    importlib.util.find_spec("bankstatementparser") is None, reason="camt extra"
+)
+@pytest.mark.parametrize("extension_tag", ["Extension", "{urn:example:metadata}Extension"])
+def test_conflicting_camt_account_under_extension_is_rejected_before_extraction(
+    monkeypatch, extension_tag
+):
+    from bankstatementparser.camt_parser import CamtParser
+
+    root = document()
+    statement = root.find(".//Stmt")
+    account = deepcopy(statement.find("Acct"))
+    account.find("Id/IBAN").text = "GB29NWBK60161331926819"
+    E.SubElement(statement, extension_tag).append(account)
+    root.set("xmlns", "urn:iso:std:iso:20022:tech:xsd:camt.053.001.02")
+
+    def must_not_extract(*args, **kwargs):
+        pytest.fail("misplaced account reached backend extraction")
+
+    monkeypatch.setattr(CamtParser, "get_transactions", must_not_extract)
+    with pytest.raises(ParseError) as caught:
+        parse(E.tostring(root))
+    assert caught.value.code == "INVALID_CAMT_FINANCIAL_STRUCTURE"
+    assert caught.value.format == "camt053"
+    assert caught.value.location == (
+        "Document/BkToCstmrStmt[1]/Stmt[1]/" + extension_tag + "[1]/Acct[1]"
+    )
