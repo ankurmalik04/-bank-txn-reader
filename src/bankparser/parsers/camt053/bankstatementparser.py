@@ -89,7 +89,13 @@ class BankStatementParserCamt053Adapter:
         if not isinstance(summary, Mapping):
             raise ParseError("bankstatementparser returned an invalid CAMT summary")
 
-        currency = _currency(summary.get("currency"))
+        # An empty statement's backend summary fabricates "Unknown" when the
+        # source has no currency. Keep that absence distinct from malformed text.
+        currency = (
+            _currency(summary.get("currency"))
+            if transaction_records or balance_records
+            else _currency(_element_text(statement_node, "./Acct/Ccy"))
+        )
         transactions = tuple(
             _map_transaction(
                 record, statement_currency=currency, source=source_transactions[index]

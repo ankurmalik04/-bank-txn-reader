@@ -108,3 +108,28 @@ def test_ofx_rejects_invalid_currency_before_normalization(currency):
     with pytest.raises(ParseError) as caught:
         read_source(source)
     assert caught.value.code == "INVALID_CURRENCY"
+
+
+def test_empty_camt_preserves_missing_source_currency():
+    import importlib.util
+    from pathlib import Path
+    from xml.etree import ElementTree as E
+
+    if importlib.util.find_spec("bankstatementparser") is None:
+        pytest.skip("camt extra")
+    root = E.fromstring(Path("corpus/camt053/basic_valid.camt053.xml").read_bytes())
+    ns = "{urn:iso:std:iso:20022:tech:xsd:camt.053.001.02}"
+    statement = root.find(".//" + ns + "Stmt")
+    for node in list(statement):
+        if node.tag in (ns + "Bal", ns + "Ntry"):
+            statement.remove(node)
+    account = statement.find(ns + "Acct")
+    account.remove(account.find(ns + "Ccy"))
+    result = parse(E.tostring(root))
+    assert result.account.currency is None
+    assert result.validation.status == "warning"
+    assert "MISSING_CURRENCY" in {w.code for w in result.warnings}
+    assert (
+        next(c for c in result.validation.checks if c.code == "CURRENCY_FORMAT").status
+        == "passed"
+    )
