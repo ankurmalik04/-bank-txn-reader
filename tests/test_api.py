@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from bankparser import api
+from bankparser import api, compare
 from bankparser.errors import InputError, UnsupportedFormatError
 from bankparser.models import Account, Statement, Transaction
 from bankparser.parsers.base import CanonicalData, ParseContext
@@ -71,6 +71,28 @@ def test_oversized_bytes_are_rejected() -> None:
         api.parse(data)
 
 
+@pytest.mark.parametrize("operation", [api.parse, compare])
+@pytest.mark.parametrize("as_path", [False, True])
+def test_api_input_limit_override_is_enforced(monkeypatch, tmp_path, operation, as_path):
+    monkeypatch.setattr(api, "MAX_INPUT_BYTES", 16)
+    data = b"x" * 17
+    source = data
+    if as_path:
+        source = tmp_path / "oversized.csv"
+        source.write_bytes(data)
+    with pytest.raises(InputError, match="maximum is 16 bytes"):
+        operation(source)
+
+
+def test_api_input_limit_override_accepts_exact_boundary(monkeypatch):
+    data = Path("corpus/csv/basic_valid.csv").read_bytes()
+    monkeypatch.setattr(api, "MAX_INPUT_BYTES", len(data))
+    assert api.parse(data).source.format == "csv"
+    monkeypatch.setattr(api, "MAX_INPUT_BYTES", len(data) - 1)
+    with pytest.raises(InputError, match="too large"):
+        api.parse(data)
+
+
 def test_missing_path_is_reported_as_input_error(tmp_path: Path) -> None:
     missing = tmp_path / "missing.mt940"
     with pytest.raises(InputError, match="Unable to read input file"):
@@ -82,11 +104,13 @@ def test_unsupported_content_is_explicit() -> None:
         api.parse(b"this is not a bank statement")
 
 
-def test_file_growth_between_stat_and_read_remains_bounded(monkeypatch) -> None:
+@pytest.mark.parametrize("operation", [api.parse, compare])
+def test_file_growth_between_stat_and_read_remains_bounded(monkeypatch, operation) -> None:
     from io import BytesIO
     from types import SimpleNamespace
 
     read_sizes = []
+    monkeypatch.setattr(api, "MAX_INPUT_BYTES", 16)
 
     class GrowingFile(BytesIO):
         def read(self, size=-1):
@@ -98,5 +122,5 @@ def test_file_growth_between_stat_and_read_remains_bounded(monkeypatch) -> None:
         Path, "open", lambda path, mode: GrowingFile(b"x" * (api.MAX_INPUT_BYTES + 100))
     )
     with pytest.raises(InputError, match="too large"):
-        api.parse(Path("growing.csv"))
+        operation(Path("growing.csv"))
     assert read_sizes == [api.MAX_INPUT_BYTES + 1]

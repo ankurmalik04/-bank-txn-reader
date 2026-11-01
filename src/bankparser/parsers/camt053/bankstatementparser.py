@@ -299,6 +299,7 @@ def _validate_financial_paths(root: Any) -> None:
     statement_path = (*prefix, "Stmt")
     supported = {
         "Stmt": statement_path,
+        "Acct": (*statement_path, "Acct"),
         "Ntry": (*statement_path, "Ntry"),
         "Bal": (*statement_path, "Bal"),
         "TxDtls": (*statement_path, "Ntry", "NtryDtls", "TxDtls"),
