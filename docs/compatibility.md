@@ -361,3 +361,10 @@ containers, repeated identity choices, or simultaneous IBAN and other identity
 choices are rejected with `AMBIGUOUS_CAMT_ACCOUNT`, even when values agree.
 A single account with no identifier retains the missing-identity warning and
 import-policy behavior.
+
+CAMT `Stmt`, `Ntry`, `Bal`, and `TxDtls` records must occupy their supported
+paths: `Document/BkToCstmrStmt/Stmt`, direct statement entries/balances, and
+`Stmt/Ntry/NtryDtls/TxDtls`. Misplaced records anywhere in the document are
+rejected with `INVALID_CAMT_FINANCIAL_STRUCTURE` and an indexed source location.
+Foreign namespace extension metadata is not treated as CAMT activity.
+This is a supported-profile guard, not full XML Schema validation.
