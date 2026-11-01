@@ -5,6 +5,7 @@ from __future__ import annotations
 from decimal import MAX_EMAX, MIN_EMIN, Context, Decimal, localcontext
 from itertools import chain
 
+from bankparser.currencies import is_currency_code
 from bankparser.models import (
     Account,
     Statement,
@@ -34,6 +35,7 @@ def validate(
         _transaction_currency_check(transactions),
         _transaction_date_check(statement, transactions, "booking_date"),
         _transaction_date_check(statement, transactions, "value_date"),
+        _currency_format_check(account, statement, transactions),
         _account_identity_check(account),
     ]
     status: ValidationStatus
@@ -315,4 +317,34 @@ def _currency_check(
         code="CURRENCY_CONSISTENCY",
         status="failed",
         message=f"Multiple currencies detected: {', '.join(sorted(currencies))}",
+    )
+
+
+def _currency_format_check(
+    account: Account, statement: Statement, transactions: tuple[Transaction, ...]
+) -> ValidationCheck:
+    values = [
+        ("account.currency", account.currency),
+        ("statement.opening_balance_currency", statement.opening_balance_currency),
+        ("statement.closing_balance_currency", statement.closing_balance_currency),
+        *(
+            (f"transactions[{i}].currency", tx.currency)
+            for i, tx in enumerate(transactions)
+        ),
+    ]
+    invalid = [
+        path
+        for path, value in values
+        if value is not None and value.strip() and not is_currency_code(value)
+    ]
+    return ValidationCheck(
+        code="CURRENCY_FORMAT",
+        status="failed" if invalid else "passed",
+        message="Invalid currency syntax at: " + ", ".join(invalid)
+        if invalid
+        else "All nonblank currencies contain three ASCII letters",
+        canonical_field="currency" if invalid else None,
+        guidance="Use three ASCII letters for each nonblank currency code."
+        if invalid
+        else None,
     )

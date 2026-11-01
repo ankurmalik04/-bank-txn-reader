@@ -76,6 +76,12 @@
       "actual": null
     },
     {
+      "code": "CURRENCY_FORMAT",
+      "status": "passed",
+      "expected": null,
+      "actual": null
+    },
+    {
       "code": "ACCOUNT_IDENTITY",
       "status": "passed",
       "expected": null,

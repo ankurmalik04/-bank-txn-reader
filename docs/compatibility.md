@@ -368,3 +368,12 @@ paths: `Document/BkToCstmrStmt/Stmt`, direct statement entries/balances, and
 rejected with `INVALID_CAMT_FINANCIAL_STRUCTURE` and an indexed source location.
 Foreign namespace extension metadata is not treated as CAMT activity.
 This is a supported-profile guard, not full XML Schema validation.
+
+`CURRENCY_FORMAT` validates all nonblank canonical account, balance, and
+transaction currencies as exactly three ASCII letters. Missing currencies remain
+subject to the existing completeness checks and import policy. This syntax
+check does not verify that a code has been assigned by ISO. Source CSV, CAMT,
+and OFX currencies are checked before uppercase normalization; malformed values
+raise `INVALID_CURRENCY`. Failed canonical syntax checks always block import,
+including for caller-constructed results with permissive policies. The added
+validation check changes validation arrays but not the canonical schema shape.

@@ -8,6 +8,7 @@ from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
+from bankparser.currencies import is_currency_code
 from bankparser.errors import ParseError, ParserDependencyError, dependency_install_hint
 from bankparser.models import Account, Counterparty, Statement, Transaction, Warning
 from bankparser.parsers.base import CanonicalData, ParseContext
@@ -704,6 +705,12 @@ def _meaningful_reference(value: Any) -> str | None:
 
 def _currency(value: Any) -> str | None:
     text = _text(value)
+    if text is not None and not is_currency_code(text):
+        raise ParseError(
+            "CAMT currency must contain three ASCII letters",
+            code="INVALID_CURRENCY",
+            location="Stmt currency",
+        )
     return text.upper() if text is not None else None
 
 
