@@ -11,6 +11,7 @@ from bankparser.errors import ParseError, ParserDependencyError, dependency_inst
 from bankparser.models import Account, Counterparty, Statement, Transaction, Warning
 from bankparser.parsers.base import CanonicalData, ParseContext
 from bankparser.parsers.mt940.source import source_fields
+from bankparser.parsers.scalars import currency_text
 
 
 class WolphMt940Adapter:
@@ -131,7 +132,9 @@ class WolphMt940Adapter:
         data = native.data
         native_amount = data.get("amount")
         amount = _amount(native_amount)
-        currency = _text(getattr(native_amount, "currency", None)) or statement_currency
+        currency = currency_text(
+            getattr(native_amount, "currency", None), location="MT940/transaction/currency"
+        ) or statement_currency
 
         value_date = _date(data.get("date"))
         # MT940 entry_date is optional. Do not fabricate a booking date by
@@ -189,7 +192,7 @@ def _balance(value: Any) -> Decimal | None:
 
 def _balance_currency(value: Any) -> str | None:
     amount = getattr(value, "amount", None)
-    return _text(getattr(amount, "currency", None))
+    return currency_text(getattr(amount, "currency", None), location="MT940/balance/currency")
 
 
 def _balance_date(value: Any) -> date | None:
