@@ -18,8 +18,10 @@ review range is `77cc779..fix/review-integrity-20261102`.
 | `4b1165f` | Opt-in comparison outcome reports, CLI exit semantics, privacy projections and API documentation. |
 | `0d4547f` | Include assessment snapshot JSON in source archives and require it in distribution checks. |
 
-The final documentation commit records the new behavior, evidence and remaining
-work. No push, PR change, merge, tag or publication was performed.
+The initial documentation commit records the new behavior, evidence and remaining
+work. At that validation stage, no push, PR change, merge, tag or publication had
+been performed. Subsequent PR creation and the intermediate-CI correction are
+recorded in [the PR stack handoff](2026-11-02-review-pr-stack.md).
 
 ## Behavior and compatibility
 
@@ -89,7 +91,10 @@ Artifacts, logs, reports and runtime inventories are retained under
    artifacts and must not replace published 0.5.0a2 files. After the PR stack and
    fixes are merged, choose the next version, update version/changelog/download
    references together, rebuild and run release CI on that exact versioned tree.
-   Cross-platform/multi-Python CI and publication have not been run here.
+   The original PR heads subsequently passed cross-platform/multi-Python CI at
+   #18 and #21–#24; #19–#20 required the assertion correction described in the PR
+   stack handoff. Updated heads require their own CI results. Publication remains
+   outstanding.
 
 The code fixes and packaging correction are complete locally. Production evidence,
 an unavailable upstream upgrade, and the post-merge release remain follow-ups.

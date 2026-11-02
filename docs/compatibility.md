@@ -281,10 +281,13 @@ because ofxparse stores options on its class; direct external use of that class
 is outside this concurrency protection. Upstream BeautifulSoup deprecation
 warnings can still appear through Python's warning system.
 
-Explicit `bankstatementparser` retains its earlier parsing policy and does not
-provide all the default adapter's strict source checks. It remains useful for
-compatibility comparisons; agreement on basic fixtures is not broader conformance
-evidence. Representative bank exports remain an outstanding coverage requirement.
+In released BankParser 0.5.0a2, the explicit `bankstatementparser` OFX adapter did
+not provide all the default adapter's strict source checks. In the unreleased
+implementation, both OFX adapters use the same bounded source reader; alternative
+backend output is checked against the source financial evidence described under
+[OFX source parity and backend diagnostics (unreleased)](#ofx-source-parity-and-backend-diagnostics-unreleased).
+Agreement on basic fixtures is not broader conformance evidence. Representative
+bank exports remain an outstanding coverage requirement.
 
 **CSV:** UTF-8/UTF-8 BOM, comma/semicolon/tab/pipe separators, and the synonyms
 listed in `src/bankparser/detection/csv.py` are recognized. Header rows must be
