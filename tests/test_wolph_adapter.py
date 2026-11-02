@@ -3,7 +3,6 @@ from __future__ import annotations
 import sys
 from datetime import date
 from decimal import Decimal
-from pathlib import Path
 from types import SimpleNamespace
 
 from bankparser.parsers.base import ParseContext
@@ -84,7 +83,11 @@ def test_wolph_adapter_maps_native_objects_without_inventing_dates(monkeypatch) 
 
     adapter = WolphMt940Adapter()
     result = adapter.parse(
-        Path("corpus/mt940/basic_valid.mt940").read_bytes(), ParseContext("test.mt940")
+        b":20:EXAMPLE-001\n:25:GB75TEST00000000000001\n:28C:1/1\n"
+        b":60F:C261001GBP1000,00\n"
+        b":61:261002D25,50NTRFCUSTOMER-REF//BANK-REF\n:86:Coffee shop\n"
+        b":61:2610031004C200,00NTRFCUSTOMER-REF//BANK-REF\n:86:Salary\n"
+        b":62F:C261005GBP1174,50\n", ParseContext("test.mt940")
     )
 
     assert adapter.implementation_version == "5.1.1"

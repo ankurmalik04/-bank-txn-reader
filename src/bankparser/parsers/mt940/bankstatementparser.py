@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib
 import re
 from collections.abc import Mapping
+from dataclasses import replace
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
@@ -17,6 +18,8 @@ from bankparser.parsers.base import CanonicalData, ParseContext
 from bankparser.parsers.mt940.source import (
     balance_currency,
     source_fields,
+    verify_statement,
+    verify_transaction,
 )
 from bankparser.parsers.scalars import currency_text, is_missing_scalar
 from bankparser.parsers.scalars import scalar_text as _text
@@ -121,7 +124,7 @@ class BankStatementParserMt940Adapter:
         summary_date = _optional_date(summary.get("statement_date"))
         statement_id, sequence = _statement_identity(summary.get("statement_id"))
 
-        return CanonicalData(
+        canonical = CanonicalData(
             account=Account(
                 id=_text(summary.get("account_id")), iban=None, currency=currency
             ),
@@ -141,6 +144,8 @@ class BankStatementParserMt940Adapter:
             transactions=transactions,
             warnings=tuple(warnings),
         )
+        verify_statement(fields, canonical.account, canonical.statement)
+        return canonical
 
 
 def _map_transaction(
@@ -156,26 +161,32 @@ def _map_transaction(
         if parser_transaction_id is not None
         else {}
     )
-    if source:
-        raw.update(
-            {
-                key: value
-                for key, value in source.items()
-                if key != "booking_date" and value is not None
-            }
-        )
-
-    return Transaction(
-        booking_date=_optional_date(source.get("booking_date")) if source else None,
+    transaction = Transaction(
+        booking_date=None,
         value_date=value_date,
         amount=_required_decimal(record.get("amount")),
         currency=_currency(record.get("currency")) or statement_currency,
         description=_text(record.get("description")),
         counterparty=Counterparty(),
-        reference=_text(source["customer_reference"] or source["bank_reference"])
-        if source
-        else None,
+        reference=None,
         transaction_id=None,
+        raw=raw,
+    )
+    if source is None:
+        return transaction
+    verify_transaction(source, transaction, backend="bankstatementparser")
+    # Internal alignment evidence must not expand the public raw payload.
+    raw.update(
+        {
+            key: source[key]
+            for key in ("customer_reference", "bank_reference", "source_line")
+            if source[key] is not None
+        }
+    )
+    return replace(
+        transaction,
+        booking_date=_optional_date(source.get("booking_date")),
+        reference=_text(source["customer_reference"] or source["bank_reference"]),
         raw=raw,
     )
 

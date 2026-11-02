@@ -4,22 +4,25 @@ from __future__ import annotations
 
 import re
 from datetime import date
+from decimal import Decimal
 
 from bankparser.errors import ParseError
+from bankparser.models import Account, Statement, Transaction
+from bankparser.parsers.scalars import currency_text, scalar_text
 
 _TAGS = re.compile(rb"(?m)^(?:\xef\xbb\xbf)?:(20|25|28C|60[FM]|61|62[FM]):([^\r\n]*)")
 _TRANSACTION = re.compile(
-    r"(?P<date>\d{6})(?P<entry_date>\d{4})?(?:RC|RD|EC|ED|C|D)"
-    r"[A-Z]?[0-9,]+(?P<code>[A-Z][A-Z0-9]{3})(?P<reference>.*)",
-    re.IGNORECASE,
+    r"(?P<date>\d{6})(?P<entry_date>\d{4})?(?P<mark>RC|RD|EC|ED|C|D)"
+    r"[A-Z]?(?P<amount>[0-9]+(?:,[0-9]*)?)(?P<code>[A-Z][A-Z0-9]{3})(?P<reference>.*)",
+    re.IGNORECASE | re.ASCII,
 )
 
 
 def source_fields(data: bytes) -> tuple[dict[str, str], list[dict[str, object]]]:
     """Reject multiple scopes and retain fields discarded by native parsers.
 
-    Monetary values remain the responsibility of the selected parser. This
-    function only reads boundaries, balance currencies, dates and references.
+    Retain exact signed financial evidence independently of backend arithmetic.
+    References are scoped evidence, not guaranteed unique transaction IDs.
     """
     fields: dict[str, str] = {}
     transactions: list[dict[str, object]] = []
@@ -66,6 +69,10 @@ def source_fields(data: bytes) -> tuple[dict[str, str], list[dict[str, object]]]
         transactions.append(
             {
                 "booking_date": booking_date,
+                "value_date": value_date,
+                "amount": _signed_amount(parsed["amount"], parsed["mark"]),
+                "mark": parsed["mark"].upper(),
+                "backend_reference": parsed["code"] + parsed["reference"],
                 "customer_reference": customer.strip() or None,
                 "bank_reference": bank.strip() or None,
                 "source_line": line,
@@ -76,16 +83,94 @@ def source_fields(data: bytes) -> tuple[dict[str, str], list[dict[str, object]]]
             "Multiple MT940 balance sections cannot be represented",
             code="MULTIPLE_STATEMENTS",
         )
+    currency = balance_currency(fields, "60F") or balance_currency(fields, "62F")
+    for transaction in transactions:
+        transaction["currency"] = currency
     return fields, transactions
 
 
 def balance_currency(fields: dict[str, str], tag: str) -> str | None:
-    value = fields.get(tag)
-    return (
-        value[7:10].upper()
-        if value and re.match(r"^[CD]\d{6}[A-Z]{3}", value)
-        else None
+    balance = _source_balance(fields, tag)
+    return balance[1] if balance is not None else None
+
+
+def _signed_amount(text: str, mark: str) -> Decimal:
+    value = Decimal(text.replace(",", "."))
+    return value.copy_negate() if mark.upper() in {"D", "RC", "ED"} else value
+
+
+def _source_balance(fields: dict[str, str], tag: str) -> tuple[Decimal, str] | None:
+    text = fields.get(tag)
+    if text is None:
+        return None
+    match = re.fullmatch(r"([CD])([0-9]{6})(.{3})([0-9]+(?:,[0-9]*)?)", text)
+    if match is None:
+        raise ParseError(
+            "Unsupported MT940 balance structure",
+            code="UNSUPPORTED_TRANSACTION",
+            location=f":{tag}:",
+        )
+    currency = currency_text(match[3], location=f":{tag}:/currency")
+    assert currency is not None
+    return _signed_amount(match[4], match[1]), currency
+
+
+def verify_transaction(
+    source: dict[str, object], transaction: Transaction, *, backend: str
+) -> None:
+    """Reject financial misalignment before attaching any source metadata."""
+    mismatch = (
+        transaction.amount != source["amount"]
+        or transaction.value_date != source["value_date"]
+        or (
+            source["currency"] is not None
+            and transaction.currency != source["currency"]
+        )
     )
+    if backend == "wolph":
+        mismatch = (
+            mismatch
+            or transaction.booking_date != source["booking_date"]
+            or any(
+                scalar_text(transaction.raw.get(key)) != source[key]
+                for key in ("customer_reference", "bank_reference")
+            )
+        )
+    else:
+        mismatch = (
+            mismatch
+            or transaction.raw.get("parser_transaction_id")
+            != source["backend_reference"]
+        )
+    if mismatch:
+        raise ParseError(
+            "MT940 source and backend transaction fields differ",
+            code="TRANSACTION_ALIGNMENT_MISMATCH",
+            location=f"line {source['source_line']} :61:",
+            canonical_field="transactions",
+        )
+
+
+def verify_statement(
+    fields: dict[str, str], account: Account, statement: Statement
+) -> None:
+    """Check source account, currency and final balances against backend output."""
+    mismatch = account.id != (fields.get("25") or None)
+    currency = balance_currency(fields, "60F") or balance_currency(fields, "62F")
+    if currency is not None and account.currency != currency:
+        mismatch = True
+    for tag, key in (("60F", "opening_balance"), ("62F", "closing_balance")):
+        expected = _source_balance(fields, tag)
+        if getattr(statement, key) != (expected[0] if expected else None) or getattr(
+            statement, key + "_currency"
+        ) != (expected[1] if expected else None):
+            mismatch = True
+    if mismatch:
+        raise ParseError(
+            "MT940 source and backend statement fields differ",
+            code="TRANSACTION_ALIGNMENT_MISMATCH",
+            location="MT940/statement",
+        )
 
 
 def _booking_date(value_date: date, entry_date: str | None) -> date | None:
