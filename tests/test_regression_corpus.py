@@ -46,11 +46,12 @@ def test_csv_unmapped_cells_are_preserved():
 
 def test_alternative_mt940_rejects_contradictory_currencies():
     pytest.importorskip("bankstatementparser")
-    with pytest.raises(ParseError, match="Conflicting MT940 statement currencies"):
+    with pytest.raises(ParseError, match="MT940 parser failed") as caught:
         parse(
             Path("corpus/mt940/currency_conflict.mt940"),
             implementation="bankstatementparser",
         )
+    assert "Conflicting MT940 statement currencies" in str(caught.value.__cause__)
 
 
 def test_camt_keeps_multiple_narratives_and_payment_references():
