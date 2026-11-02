@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+- Optional OFX and MT940 adapters validate original currency syntax before
+  normalization, rejecting Unicode expansions and malformed nonblank codes.
+- Backend failures and invalid backend scalar diagnostics use sanitized default
+  messages across adapters; original exceptions remain available through chaining.
+- Alternative OFX now uses the same bounded source checks as default OFX and
+  verifies ordered amounts, FITIDs, dates, account, currency and available backend
+  balance evidence. Source ledger balances remain authoritative; OFX does not
+  invent an opening balance. The alternative extra declares defusedxml directly.
+- Both MT940 adapters verify ordered source amounts, signs, dates and backend
+  references, plus account/currency/final balances. Source-only metadata is added
+  after alignment; legitimate repeated transactions remain separate.
+- Added opt-in `compare(..., collect_errors=True)` and CLI `--collect-errors`.
+  `ComparisonRunReport` retains safe per-backend outcomes and comparisons among
+  successful results. Incomplete runs never report agreement and exit 2 in the
+  CLI. Default comparison calls retain their existing behavior and output shape.
+- Source distributions now include the six assessment compatibility snapshots;
+  the distribution check requires the snapshot fixture to remain packaged.
+
 - Added 35 bounded deterministic property cases for extreme decimal scales,
   cancellation and conservation, CSV quoting/order, multiline diagnostic
   locations, comparison coordinates and privacy. Published the coverage/gap

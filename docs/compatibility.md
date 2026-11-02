@@ -69,11 +69,11 @@ reconcile. This does not add independent reviewer sign-off or held-out coverage.
 
 | Format | Implementation | Installation | Supported scope |
 | --- | --- | --- | --- |
-| MT940 | `wolph` (default) | Base package | One statement; repeated boundaries are rejected. |
-| MT940 | `bankstatementparser` | `alternative` or `all` extra | The same statement scope; source booking dates/references are preserved independently. |
+| MT940 | `wolph` (default) | Base package | One statement; source financial fields and ordered transactions are checked against backend output. |
+| MT940 | `bankstatementparser` | `alternative` or `all` extra | The same source financial checks; source booking dates/references are attached after ordered backend alignment. |
 | CAMT.053 | `bankstatementparser` | `camt` or `all` extra | One `Stmt`; details must be representable by the backend and their count must match source details. |
 | OFX/QFX | `ofxparse` (default) | `ofx` or `all` extra | One bank/card response, with strict source checks and local booking dates. |
-| OFX/QFX | `bankstatementparser` | `alternative` or `all` extra | Earlier compatibility backend and parsing policies. |
+| OFX/QFX | `bankstatementparser` | `alternative` or `all` extra | Shared bounded source checks; ordered IDs/amounts/dates and account/currency/balance evidence checked against backend output. |
 | CSV | `native` (default) | Base package | One account/currency scope; recognized, non-duplicated headers. |
 | CSV | `bankstatementparser` compatibility adapter | `alternative` or `all` extra | Native canonical fields plus the optional backend transaction-count check. |
 
@@ -148,6 +148,17 @@ UTF-8 BOM inputs are checked across both implementations. LF and CRLF are
 accepted; CR-only MT940 files are not detected. Intermediate `60M`/`62M` balances
 are not exposed consistently across implementations and are not covered by the
 final-balance compatibility promise.
+
+Both adapters now independently read signed source amounts, value/entry dates,
+references and available final-balance currency, then reject backend financial
+misalignment before producing output. WoLpH references and booking dates are
+checked directly; the alternative backend's transaction code/reference tail is
+checked before source-only booking dates and canonical references are attached.
+Legitimate repeated transactions remain distinct. Identical financial tuples
+with identical exposed references cannot independently prove record identity;
+references are not guaranteed unique IDs. Account and available final balance
+amounts/currencies are also checked against source evidence. These safeguards do
+not add new production-export or bank-wide compatibility evidence.
 
 **CAMT.053:** Source nodes enrich the backend's ordered transaction records after
 a count check. In 0.5.0a2, ordered composite keys (booked amount,
@@ -377,3 +388,23 @@ and OFX currencies are checked before uppercase normalization; malformed values
 raise `INVALID_CURRENCY`. Failed canonical syntax checks always block import,
 including for caller-constructed results with permissive policies. The added
 validation check changes validation arrays but not the canonical schema shape.
+
+## OFX source parity and backend diagnostics (unreleased)
+
+Both OFX implementations use the same bounded source reader to reject duplicate
+FITIDs, unsupported corrections/pending activity, malformed structure and
+unsupported financial scopes before backend invocation. Alternative output must
+retain ordered IDs, exact amounts, booking dates, account and currency. When the
+backend reports a closing balance it must match the source ledger balance;
+missing backend balance output is filled from source. No opening balance is
+fabricated. Source warnings are retained, including on empty statements.
+
+Optional OFX/MT940 currency text is checked as three ASCII letters before case
+normalization. Lowercase ASCII codes remain accepted; this checks syntax rather
+than membership in an assigned ISO-currency registry.
+
+Third-party parser failure messages and invalid backend scalar diagnostics no
+longer echo arbitrary exception/value strings through ordinary CLI errors.
+Chained exceptions remain available to Python debugging. Successful canonical
+output, upstream warnings and deliberate source validation diagnostics may still
+contain source information; use the explicit redacted output policy when needed.

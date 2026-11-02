@@ -12,7 +12,7 @@ advisory results and native-wheel limits.
 | --- | --- | --- |
 | `ofx` | `ofxparse==0.21`, `defusedxml>=0.7.1,<0.8`, `lxml>=6.1.3,<7` | Default bank/card OFX and QFX adapter, bounded SGML and hardened XML source checks |
 | `camt` | `bankstatementparser==0.0.20`, `lxml>=6.1.3,<7` | Current CAMT adapter; inherits the upstream pandas dependency |
-| `alternative` | `bankstatementparser==0.0.20`, `lxml>=6.1.3,<7` | Explicit compatibility backend for supported families |
+| `alternative` | `bankstatementparser==0.0.20`, `defusedxml>=0.7.1,<0.8`, `lxml>=6.1.3,<7` | Explicit compatibility backend for supported families |
 | `csv` | None | Compatibility installation name; native CSV is already included |
 | `all` | Both optional backend sets | All currently registered adapters |
 
@@ -22,6 +22,8 @@ This does not make the OFX extra dependency-free. Removing lxml requires an
 upstream dependency change or a separately maintained and verified alternative.
 BankParser imports optional backends only when selected.
 
+Both OFX adapters use the shared guarded source reader. The alternative extra
+declares its hardened XML dependency directly; the base install is unchanged.
 The guarded OFX adapter retains source-local dates and exact Decimal amounts,
 checks transaction identities/counts against the backend and rejects unsupported
 corrections, pending activity, investment scopes and foreign-currency semantics.
