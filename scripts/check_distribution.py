@@ -47,6 +47,7 @@ POLICIES = {
     "examples/conformance/native-csv.manifest.json",
     "examples/conformance/native-csv.expected.json",
     "tests/ofx_cases.py",
+    "tests/fixtures/readiness/pre_refactor_assessments.json",
 }
 
 
