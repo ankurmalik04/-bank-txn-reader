@@ -12,6 +12,7 @@ from bankparser.errors import ParseError, ParserDependencyError, dependency_inst
 from bankparser.models import Warning
 from bankparser.parsers.base import CanonicalData, ParseContext
 from bankparser.parsers.ofx.source import read_source
+from bankparser.parsers.scalars import currency_text
 
 # ofxparse 0.21 stores parse options on its class. Serialize our invocations.
 _BACKEND_LOCK = Lock()
@@ -78,7 +79,8 @@ def _map_checked(parsed: Any, canonical: CanonicalData) -> CanonicalData:
         )
     if (
         (account.account_id or None) != canonical.account.id
-        or (statement.currency.upper() or None) != canonical.account.currency
+        or currency_text(statement.currency, location="OFX/backend/currency")
+        != canonical.account.currency
         or getattr(statement, "balance", None) != canonical.statement.closing_balance
         or any(
             tx.id != expected.transaction_id or tx.amount != expected.amount

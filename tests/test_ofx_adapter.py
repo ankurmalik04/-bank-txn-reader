@@ -10,7 +10,12 @@ import pytest
 from bankparser.parsers.base import ParseContext
 from bankparser.parsers.ofx.bankstatementparser import BankStatementParserOfxAdapter
 
-OFX_BYTES = b"""<OFX>
+OFX_BYTES = b"""OFXHEADER:100
+DATA:OFXSGML
+VERSION:102
+SECURITY:NONE
+
+<OFX>
 <BANKMSGSRSV1><STMTTRNRS><STMTRS>
 <CURDEF>GBP
 <BANKACCTFROM><ACCTID>ACCOUNT-1</BANKACCTFROM>
@@ -47,7 +52,8 @@ class FakeOfxParser:
     def __init__(self, file_name: str | Path) -> None:
         path = Path(file_name)
         assert path.suffix == ".qfx"
-        assert path.read_bytes() == self.expected_bytes
+        from bankparser.parsers.ofx.source import read_source
+        assert path.read_bytes() == read_source(self.expected_bytes).backend_input
 
     def parse(self) -> FakeFrame:
         return FakeFrame()
