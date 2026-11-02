@@ -9,7 +9,7 @@ from collections.abc import Sequence
 from typing import Any, NoReturn
 
 from bankparser.api import implementations, parse
-from bankparser.comparison import compare
+from bankparser.comparison import ComparisonRunReport, compare
 from bankparser.diagnostics import Diagnostic, diagnostic_for_error, diagnostics_for
 from bankparser.errors import BankParserError, InputError
 from bankparser.options import CsvOptions
@@ -65,6 +65,11 @@ def build_parser(*, redacted_errors: bool = False) -> argparse.ArgumentParser:
         action="append",
         dest="implementations",
         help="implementation to include; repeat to compare an explicit set",
+    )
+    compare_parser.add_argument(
+        "--collect-errors",
+        action="store_true",
+        help="retain parser outcomes and exit 2 if any selected implementation fails",
     )
     _add_csv_options(compare_parser)
     compare_parser.add_argument(
@@ -203,6 +208,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         if args.format is not None:
             extra["format"] = args.format
         if args.command == "compare":
+            if args.collect_errors:
+                extra["collect_errors"] = True
             report = compare(
                 args.file,
                 implementations=args.implementations,
@@ -216,6 +223,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                     sort_keys=True,
                 )
             )
+            if isinstance(report, ComparisonRunReport) and not report.complete:
+                return 2
             return 4 if args.fail_on_diff and not report.matches else 0
         policy = None
         destination = None

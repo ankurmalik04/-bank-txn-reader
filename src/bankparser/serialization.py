@@ -165,14 +165,38 @@ def _redacted_diagnostic(value: Any) -> Any:
             "warnings": _redacted_warnings(value.warnings),
             "transaction_count": len(value.transactions),
         }
-    if name == "ComparisonReport":
-        return {
+    if name in {"ComparisonReport", "ComparisonRunReport"}:
+        report = {
             "format": value.format if value.format in _FORMATS else None,
             "implementations": [
                 item for item in value.implementations if item in _IMPLEMENTATIONS
             ],
             "matches": bool(value.matches),
             "difference_count": len(value.differences),
+        }
+        if name == "ComparisonRunReport":
+            report["complete"] = bool(value.complete)
+            report["outcomes"] = [
+                _redacted_diagnostic(outcome)
+                for outcome in value.outcomes
+                if outcome.implementation in _IMPLEMENTATIONS
+            ]
+        return report
+    if name == "ComparisonOutcome":
+        return {
+            "implementation": value.implementation
+            if value.implementation in _IMPLEMENTATIONS
+            else None,
+            "status": value.status if value.status in {"success", "error"} else None,
+            "error_code": _safe_code(value.error_code)
+            if value.error_code is not None
+            else None,
+            "transaction_count": value.transaction_count
+            if isinstance(value.transaction_count, int) and value.transaction_count >= 0
+            else None,
+            "validation_status": value.validation_status
+            if value.validation_status in _STATUSES
+            else None,
         }
     if name == "ImportAssessment":
         return {
