@@ -12,7 +12,7 @@ from tempfile import TemporaryDirectory
 from typing import Any
 
 from bankparser.errors import ParseError, ParserDependencyError, dependency_install_hint
-from bankparser.models import Counterparty, Transaction
+from bankparser.models import Counterparty, Transaction, Warning
 from bankparser.parsers.base import CanonicalData, ParseContext
 from bankparser.parsers.ofx.encoding import (
     _decode_ofx as _decode_ofx,  # noqa: PLC0414 -- keep the existing helper import path
@@ -78,7 +78,12 @@ class BankStatementParserOfxAdapter:
                 location="BANKTRANLIST/STMTTRN",
             )
         if not summaries and not records:
-            return canonical
+            return CanonicalData(
+                canonical.account,
+                canonical.statement,
+                canonical.transactions,
+                _empty_backend_warnings(canonical, {}),
+            )
         if len(summaries) != 1:
             raise ParseError(
                 "OFX backend returned an unexpected account count",
@@ -130,8 +135,42 @@ class BankStatementParserOfxAdapter:
                 location="OFX",
             )
         return CanonicalData(
-            canonical.account, canonical.statement, transactions, canonical.warnings
+            canonical.account,
+            canonical.statement,
+            transactions,
+            canonical.warnings if records else _empty_backend_warnings(canonical, summary),
         )
+
+
+def _empty_backend_warnings(
+    canonical: CanonicalData, summary: Mapping[str, Any]
+) -> tuple[Warning, ...]:
+    """Expose source-only financial fields without certifying other metadata."""
+    missing = [
+        name
+        for name, source, backend in (
+            ("account", canonical.account.id, _text(summary.get("account_id"))),
+            ("currency", canonical.account.currency, _text(summary.get("currency"))),
+            (
+                "closing balance",
+                canonical.statement.closing_balance,
+                _optional_decimal(summary.get("closing_balance")),
+            ),
+        )
+        if source is not None and backend is None
+    ]
+    if not missing:
+        return canonical.warnings
+    return (
+        *canonical.warnings,
+        Warning(
+            "OFX_BACKEND_UNVERIFIED",
+            "OFX backend did not corroborate empty-statement fields: "
+            + ", ".join(missing)
+            + "; values come from source",
+            location="OFX",
+        ),
+    )
 
 
 def _map_transaction(
