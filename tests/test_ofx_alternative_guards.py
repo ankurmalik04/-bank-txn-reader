@@ -1,5 +1,6 @@
 """The optional OFX adapter must enforce the same source financial evidence."""
 
+import re
 import runpy
 from copy import deepcopy
 from decimal import Decimal
@@ -25,7 +26,7 @@ def adapter_for(records, summary):
             return SimpleNamespace(to_dict=lambda orient: records)
 
         def get_summaries(self):
-            return [summary]
+            return [] if summary is None else [summary]
 
     adapter = BankStatementParserOfxAdapter.__new__(BankStatementParserOfxAdapter)
     adapter._parser_class = Backend
@@ -152,3 +153,96 @@ def test_real_alternative_backend_preserves_source_financial_fields(case):
         (t.amount, t.transaction_id, t.currency, t.booking_date)
         for t in expected.transactions
     ]
+
+
+EMPTY = re.sub(rb"<STMTTRN>.*?</STMTTRN>", b"", BASIC, flags=re.DOTALL)
+EMPTY_SUMMARY = {
+    "account_id": "GB75TEST00000000000001",
+    "currency": "GBP",
+    "closing_balance": Decimal("561.25"),
+}
+
+
+@pytest.mark.parametrize(
+    ("summary", "missing"),
+    [
+        (None, ["account", "currency", "closing balance"]),
+        ({}, ["account", "currency", "closing balance"]),
+        (
+            {"account_id": None, "currency": None, "closing_balance": None},
+            ["account", "currency", "closing balance"],
+        ),
+        ({"account_id": EMPTY_SUMMARY["account_id"]}, ["currency", "closing balance"]),
+        ({"currency": "gbp"}, ["account", "closing balance"]),
+        ({"closing_balance": Decimal("561.25")}, ["account", "currency"]),
+        (
+            {"account_id": EMPTY_SUMMARY["account_id"], "currency": "GBP"},
+            ["closing balance"],
+        ),
+        (EMPTY_SUMMARY, []),
+    ],
+)
+def test_empty_statement_reports_source_only_financial_fields(summary, missing):
+    from bankparser.parsers.ofx.source import read_source
+    from bankparser.serialization import to_primitive
+
+    expected = read_source(EMPTY).canonical
+    actual = adapter_for([], summary).parse(EMPTY, ParseContext())
+    assert actual.account == expected.account
+    assert actual.statement == expected.statement
+    assert actual.transactions == ()
+    assert actual.warnings[: len(expected.warnings)] == expected.warnings
+    extra = actual.warnings[len(expected.warnings) :]
+    if missing:
+        assert len(extra) == 1
+        assert extra[0].code == "OFX_BACKEND_UNVERIFIED"
+        assert ", ".join(missing) in extra[0].message
+        assert extra[0].location == "OFX"
+        assert to_primitive(extra[0], policy="redacted-diagnostic") == {
+            "code": "OFX_BACKEND_UNVERIFIED"
+        }
+    else:
+        assert extra == ()
+
+
+@pytest.mark.parametrize("closing", [Decimal(0), None])
+def test_empty_backend_does_not_confuse_zero_or_absent_source_balance(closing):
+    from bankparser.parsers.ofx.source import read_source
+
+    data = (
+        EMPTY.replace(b"<BALAMT>561.25", b"<BALAMT>0.00")
+        if closing is not None
+        else EMPTY.replace(b"LEDGERBAL", b"AVAILBAL")
+    )
+    summary = {**EMPTY_SUMMARY, "closing_balance": closing}
+    expected = read_source(data).canonical
+    actual = adapter_for([], summary).parse(data, ParseContext())
+    assert actual.statement.closing_balance == closing
+    assert actual.warnings == expected.warnings
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("account_id", "OTHER"),
+        ("currency", "USD"),
+        ("closing_balance", Decimal(999)),
+        ("opening_balance", Decimal(0)),
+    ],
+)
+def test_empty_statement_still_rejects_conflicting_backend_evidence(field, value):
+    summary = {**EMPTY_SUMMARY, field: value}
+    with pytest.raises(ParseError) as caught:
+        adapter_for([], summary).parse(EMPTY, ParseContext())
+    assert caught.value.code == "OFX_BACKEND_MISMATCH"
+
+
+def test_real_empty_backend_preserves_source_and_exposes_missing_corroboration():
+    pytest.importorskip("bankstatementparser")
+    from bankparser import parse
+
+    result = parse(EMPTY, implementation="bankstatementparser")
+    assert result.source.implementation == "bankstatementparser"
+    assert result.warnings[-1].code == "OFX_BACKEND_UNVERIFIED"
+    assert result.account.id == EMPTY_SUMMARY["account_id"]
+    assert result.statement.closing_balance == EMPTY_SUMMARY["closing_balance"]
