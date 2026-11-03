@@ -92,6 +92,67 @@ def test_missing_account_container_is_rejected():
     assert caught.value.location == "Stmt/Acct"
 
 
+@pytest.mark.parametrize("currency", ["GBP", "EUR", "", "BADDD", "ßP"])
+@pytest.mark.parametrize("empty", [False, True])
+def test_repeated_account_currency_is_rejected_at_source(currency, empty):
+    node = statement()
+    if empty:
+        for child in list(node):
+            if child.tag in {"Ntry", "Bal"}:
+                node.remove(child)
+    E.SubElement(node.find("Acct"), "Ccy").text = currency
+    with pytest.raises(ParseError) as caught:
+        _validate_source(node)
+    assert caught.value.code == "AMBIGUOUS_CAMT_ACCOUNT"
+    assert caught.value.location == "Stmt/Acct/Ccy"
+
+
+@pytest.mark.parametrize("currency", ["GBP", "EUR", "", "BADDD", "ßP"])
+@pytest.mark.parametrize("empty", [False, True])
+def test_repeated_account_currency_never_reaches_backend_extraction(
+    currency, empty, monkeypatch
+):
+    module = pytest.importorskip("bankstatementparser.camt_parser")
+    node = statement()
+    if empty:
+        for child in list(node):
+            if child.tag in {"Ntry", "Bal"}:
+                node.remove(child)
+    E.SubElement(node.find("Acct"), "Ccy").text = currency
+    root = E.Element("Document", xmlns="urn:iso:std:iso:20022:tech:xsd:camt.053.001.02")
+    E.SubElement(root, "BkToCstmrStmt").append(node)
+
+    def forbidden(*args, **kwargs):
+        pytest.fail("ambiguous currency reached backend extraction")
+
+    for method in ("get_transactions", "get_account_balances", "get_summaries"):
+        monkeypatch.setattr(module.CamtParser, method, forbidden)
+    with pytest.raises(ParseError) as caught:
+        parse(E.tostring(root))
+    assert caught.value.code == "AMBIGUOUS_CAMT_ACCOUNT"
+    assert caught.value.location == "Stmt/Acct/Ccy"
+
+
+@pytest.mark.parametrize("policy", ["full", "redacted-diagnostic"])
+def test_repeated_currency_cli_diagnostic(tmp_path, capsys, policy):
+    pytest.importorskip("bankstatementparser")
+    node = statement()
+    E.SubElement(node.find("Acct"), "Ccy").text = "PRIVATE_CURRENCY"
+    root = E.Element("Document", xmlns="urn:iso:std:iso:20022:tech:xsd:camt.053.001.02")
+    E.SubElement(root, "BkToCstmrStmt").append(node)
+    path = tmp_path / "PRIVATE_FILENAME.xml"
+    path.write_bytes(E.tostring(root))
+    assert main(["parse", str(path), "--json-errors", "--output-policy", policy]) == 2
+    output = capsys.readouterr()
+    assert output.out == ""
+    error = json.loads(output.err)["error"]
+    assert error["code"] == "AMBIGUOUS_CAMT_ACCOUNT"
+    assert error["diagnostic"]["code"] == "AMBIGUOUS_CAMT_ACCOUNT"
+    if policy == "full":
+        assert error["location"] == "Stmt/Acct/Ccy"
+    assert "PRIVATE" not in output.err
+
+
 @pytest.mark.skipif(
     importlib.util.find_spec("bankstatementparser") is None, reason="camt extra"
 )
@@ -113,9 +174,10 @@ def test_ambiguous_account_code_survives_redaction(tmp_path, capsys, json_errors
         "format": "camt053",
         "canonical_field": None,
     }
-    assert to_primitive(
-        diagnostic_for_error(caught.value), policy="redacted-diagnostic"
-    ) == expected
+    assert (
+        to_primitive(diagnostic_for_error(caught.value), policy="redacted-diagnostic")
+        == expected
+    )
     path = tmp_path / "PRIVATE_FILENAME_829174.xml"
     path.write_bytes(data)
     argv = ["parse", str(path), "--output-policy", "redacted-diagnostic"]
