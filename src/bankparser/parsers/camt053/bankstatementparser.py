@@ -293,6 +293,12 @@ def _validate_account(statement: Any) -> None:
             location="Stmt/Acct",
         )
     account = accounts[0]
+    if len(account.findall("Ccy")) > 1:
+        raise ParseError(
+            "CAMT account contains repeated currency elements",
+            code="AMBIGUOUS_CAMT_ACCOUNT",
+            location="Stmt/Acct/Ccy",
+        )
     for path in ("Id", "Id/IBAN", "Id/Othr", "Id/Othr/Id"):
         if len(account.findall(path)) > 1:
             raise ParseError(
