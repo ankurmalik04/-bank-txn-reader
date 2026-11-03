@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- CAMT rejects repeated account currency elements, including identical values,
+  before backend financial extraction with `AMBIGUOUS_CAMT_ACCOUNT`.
+- Empty alternative OFX results warn with `OFX_BACKEND_UNVERIFIED` when account,
+  currency or closing balance is obtained only from source. Partial and absent
+  backend summaries remain supported; supplied conflicts are still rejected.
+  The warning participates in comparison differences, so successful execution
+  of both parsers does not imply matching corroboration evidence.
 - Optional OFX and MT940 adapters validate original currency syntax before
   normalization, rejecting Unicode expansions and malformed nonblank codes.
 - Backend failures and invalid backend scalar diagnostics use sanitized default

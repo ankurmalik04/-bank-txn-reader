@@ -373,6 +373,10 @@ continues to share native extraction rather than providing independent agreement
 CAMT statements require exactly one direct `Acct` container. Repeated account
 containers, repeated identity choices, or simultaneous IBAN and other identity
 choices are rejected with `AMBIGUOUS_CAMT_ACCOUNT`, even when values agree.
+Repeated direct `Acct/Ccy` elements are also rejected with this code and location
+`Stmt/Acct/Ccy`, including identical, blank or malformed duplicates, before
+backend financial extraction. A missing account currency retains its existing
+fallback and completeness behavior; a single supplied value must have valid syntax.
 A single account with no identifier retains the missing-identity warning and
 import-policy behavior.
 
@@ -401,6 +405,24 @@ retain ordered IDs, exact amounts, booking dates, account and currency. When the
 backend reports a closing balance it must match the source ledger balance;
 missing backend balance output is filled from source. No opening balance is
 fabricated. Source warnings are retained, including on empty statements.
+
+For an empty statement, the alternative backend can return no summaries or one
+summary with absent account, currency or closing-balance fields. BankParser keeps
+the source values and emits `OFX_BACKEND_UNVERIFIED`, listing the financial fields
+that the backend did not corroborate. Partial summaries also produce this warning
+for their missing source-backed fields; any supplied conflicting evidence still
+causes rejection. No warning is added when all available source account, currency
+and closing-balance fields are corroborated. This does not certify statement
+dates or other source-only metadata, or establish independent conformance.
+
+Warnings are part of comparison: an empty alternative result with this warning
+differs from a default OFX result without it, even when their canonical financial
+values agree. `matches` is then false; `complete` in an opt-in collected report
+remains true if every selected parser returned successfully. CLI `--fail-on-diff`
+returns 4 for that complete comparison. Redacted parse output retains the warning
+code; redacted comparison output retains the mismatch and difference count.
+Both implementations share the source reader, so equality on other inputs also
+does not establish independent exporter conformance.
 
 Optional OFX/MT940 currency text is checked as three ASCII letters before case
 normalization. Lowercase ASCII codes remain accepted; this checks syntax rather
