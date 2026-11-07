@@ -69,11 +69,11 @@ reconcile. This does not add independent reviewer sign-off or held-out coverage.
 
 | Format | Implementation | Installation | Supported scope |
 | --- | --- | --- | --- |
-| MT940 | `wolph` (default) | Base package | One statement; repeated boundaries are rejected. |
-| MT940 | `bankstatementparser` | `alternative` or `all` extra | The same statement scope; source booking dates/references are preserved independently. |
+| MT940 | `wolph` (default) | Base package | One statement; source financial fields and ordered transactions are checked against backend output. |
+| MT940 | `bankstatementparser` | `alternative` or `all` extra | The same source financial checks; source booking dates/references are attached after ordered backend alignment. |
 | CAMT.053 | `bankstatementparser` | `camt` or `all` extra | One `Stmt`; details must be representable by the backend and their count must match source details. |
 | OFX/QFX | `ofxparse` (default) | `ofx` or `all` extra | One bank/card response, with strict source checks and local booking dates. |
-| OFX/QFX | `bankstatementparser` | `alternative` or `all` extra | Earlier compatibility backend and parsing policies. |
+| OFX/QFX | `bankstatementparser` | `alternative` or `all` extra | Shared bounded source checks; ordered IDs/amounts/dates and account/currency/balance evidence checked against backend output. |
 | CSV | `native` (default) | Base package | One account/currency scope; recognized, non-duplicated headers. |
 | CSV | `bankstatementparser` compatibility adapter | `alternative` or `all` extra | Native canonical fields plus the optional backend transaction-count check. |
 
@@ -148,6 +148,17 @@ UTF-8 BOM inputs are checked across both implementations. LF and CRLF are
 accepted; CR-only MT940 files are not detected. Intermediate `60M`/`62M` balances
 are not exposed consistently across implementations and are not covered by the
 final-balance compatibility promise.
+
+Both adapters now independently read signed source amounts, value/entry dates,
+references and available final-balance currency, then reject backend financial
+misalignment before producing output. WoLpH references and booking dates are
+checked directly; the alternative backend's transaction code/reference tail is
+checked before source-only booking dates and canonical references are attached.
+Legitimate repeated transactions remain distinct. Identical financial tuples
+with identical exposed references cannot independently prove record identity;
+references are not guaranteed unique IDs. Account and available final balance
+amounts/currencies are also checked against source evidence. These safeguards do
+not add new production-export or bank-wide compatibility evidence.
 
 **CAMT.053:** Source nodes enrich the backend's ordered transaction records after
 a count check. In 0.5.0a2, ordered composite keys (booked amount,
@@ -270,10 +281,13 @@ because ofxparse stores options on its class; direct external use of that class
 is outside this concurrency protection. Upstream BeautifulSoup deprecation
 warnings can still appear through Python's warning system.
 
-Explicit `bankstatementparser` retains its earlier parsing policy and does not
-provide all the default adapter's strict source checks. It remains useful for
-compatibility comparisons; agreement on basic fixtures is not broader conformance
-evidence. Representative bank exports remain an outstanding coverage requirement.
+In released BankParser 0.5.0a2, the explicit `bankstatementparser` OFX adapter did
+not provide all the default adapter's strict source checks. In the unreleased
+implementation, both OFX adapters use the same bounded source reader; alternative
+backend output is checked against the source financial evidence described under
+[OFX source parity and backend diagnostics (unreleased)](#ofx-source-parity-and-backend-diagnostics-unreleased).
+Agreement on basic fixtures is not broader conformance evidence. Representative
+bank exports remain an outstanding coverage requirement.
 
 **CSV:** UTF-8/UTF-8 BOM, comma/semicolon/tab/pipe separators, and the synonyms
 listed in `src/bankparser/detection/csv.py` are recognized. Header rows must be
@@ -359,6 +373,10 @@ continues to share native extraction rather than providing independent agreement
 CAMT statements require exactly one direct `Acct` container. Repeated account
 containers, repeated identity choices, or simultaneous IBAN and other identity
 choices are rejected with `AMBIGUOUS_CAMT_ACCOUNT`, even when values agree.
+Repeated direct `Acct/Ccy` elements are also rejected with this code and location
+`Stmt/Acct/Ccy`, including identical, blank or malformed duplicates, before
+backend financial extraction. A missing account currency retains its existing
+fallback and completeness behavior; a single supplied value must have valid syntax.
 A single account with no identifier retains the missing-identity warning and
 import-policy behavior.
 
@@ -377,3 +395,41 @@ and OFX currencies are checked before uppercase normalization; malformed values
 raise `INVALID_CURRENCY`. Failed canonical syntax checks always block import,
 including for caller-constructed results with permissive policies. The added
 validation check changes validation arrays but not the canonical schema shape.
+
+## OFX source parity and backend diagnostics (unreleased)
+
+Both OFX implementations use the same bounded source reader to reject duplicate
+FITIDs, unsupported corrections/pending activity, malformed structure and
+unsupported financial scopes before backend invocation. Alternative output must
+retain ordered IDs, exact amounts, booking dates, account and currency. When the
+backend reports a closing balance it must match the source ledger balance;
+missing backend balance output is filled from source. No opening balance is
+fabricated. Source warnings are retained, including on empty statements.
+
+For an empty statement, the alternative backend can return no summaries or one
+summary with absent account, currency or closing-balance fields. BankParser keeps
+the source values and emits `OFX_BACKEND_UNVERIFIED`, listing the financial fields
+that the backend did not corroborate. Partial summaries also produce this warning
+for their missing source-backed fields; any supplied conflicting evidence still
+causes rejection. No warning is added when all available source account, currency
+and closing-balance fields are corroborated. This does not certify statement
+dates or other source-only metadata, or establish independent conformance.
+
+Warnings are part of comparison: an empty alternative result with this warning
+differs from a default OFX result without it, even when their canonical financial
+values agree. `matches` is then false; `complete` in an opt-in collected report
+remains true if every selected parser returned successfully. CLI `--fail-on-diff`
+returns 4 for that complete comparison. Redacted parse output retains the warning
+code; redacted comparison output retains the mismatch and difference count.
+Both implementations share the source reader, so equality on other inputs also
+does not establish independent exporter conformance.
+
+Optional OFX/MT940 currency text is checked as three ASCII letters before case
+normalization. Lowercase ASCII codes remain accepted; this checks syntax rather
+than membership in an assigned ISO-currency registry.
+
+Third-party parser failure messages and invalid backend scalar diagnostics no
+longer echo arbitrary exception/value strings through ordinary CLI errors.
+Chained exceptions remain available to Python debugging. Successful canonical
+output, upstream warnings and deliberate source validation diagnostics may still
+contain source information; use the explicit redacted output policy when needed.

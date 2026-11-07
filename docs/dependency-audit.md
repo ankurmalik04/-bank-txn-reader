@@ -112,3 +112,13 @@ The vulnerability workflow refreshes runtime checks on changes and weekly; manua
 license/native review is still required when package versions or wheels change.
 Known-advisory absence does not identify unknown vulnerabilities or malicious
 packages. Build/dev tools, Python itself and the OS are outside this audit.
+
+## OFX warning maintenance check — 2 November 2026
+
+[PyPI's ofxparse release history](https://pypi.org/project/ofxparse/#history)
+still lists 0.21 as the latest release. There is no newer published release to
+validate for the BeautifulSoup `findAll` deprecations. Keep the existing pin and
+visible warnings; evaluate a compatible upstream release separately when one is
+published. The alternative extra now directly declares the existing defusedxml
+range because both OFX implementations invoke the shared hardened source reader.
+This maintenance check is not a new advisory audit result.
