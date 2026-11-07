@@ -6,17 +6,17 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from decimal import Decimal, InvalidOperation, localcontext
 from os import PathLike
-from typing import Any
+from typing import Any, Literal
 
 from bankparser import api
 from bankparser._input import csv_configuration, input_format, load_input
 from bankparser.api import implementations as available_implementations
 from bankparser.api import parse
-from bankparser.errors import ComparisonError
+from bankparser.errors import ComparisonError, ParseError, ParserDependencyError
 from bankparser.models import ParseResult
 from bankparser.options import CsvOptions
 from bankparser.profiles import CsvProfile
-from bankparser.serialization import to_primitive
+from bankparser.serialization import _safe_code, to_primitive
 
 _MISSING = object()
 
@@ -45,6 +45,25 @@ class ComparisonReport:
     differences: tuple[ComparisonDifference, ...]
 
 
+@dataclass(frozen=True, slots=True)
+class ComparisonOutcome:
+    """Safe execution facts for one selected implementation."""
+
+    implementation: str
+    status: Literal["success", "error"]
+    error_code: str | None = None
+    transaction_count: int | None = None
+    validation_status: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ComparisonRunReport(ComparisonReport):
+    """Opt-in report retaining outcomes even when some backends fail."""
+
+    outcomes: tuple[ComparisonOutcome, ...]
+    complete: bool
+
+
 def compare(
     source: str | PathLike[str] | bytes,
     *,
@@ -52,13 +71,16 @@ def compare(
     csv_options: CsvOptions | None = None,
     csv_profile: CsvProfile | None = None,
     format: str | None = None,
-) -> ComparisonReport:
+    collect_errors: bool = False,
+) -> ComparisonReport | ComparisonRunReport:
     """Run parser implementations and compare their canonical output.
 
     Source provenance and parser-specific ``raw`` transaction fields are excluded
     from comparison. Monetary fields compare by numeric value; other fields
     compare exactly. Reported differences retain their serialized values. This
-    function never chooses a winning implementation.
+    function never chooses a winning implementation. With ``collect_errors``,
+    expected parser/dependency failures become safe per-implementation outcomes;
+    an incomplete run never reports a match. The default remains fail-fast.
     """
     # Compare a single snapshot even if a path is replaced while backends run.
     data, _ = load_input(source, max_bytes=api.MAX_INPUT_BYTES)
@@ -75,16 +97,44 @@ def compare(
         raise ComparisonError("At least two parser implementations are required")
 
     results: dict[str, ParseResult] = {}
+    outcomes: list[ComparisonOutcome] = []
     for implementation in selected:
-        results[implementation] = parse(
-            data,
-            implementation=implementation,
-            csv_options=csv_options,
-            csv_profile=csv_profile,
-            format=format,
-        )
-
-    return compare_results(results)
+        try:
+            result = parse(
+                data,
+                implementation=implementation,
+                csv_options=csv_options,
+                csv_profile=csv_profile,
+                format=format,
+            )
+        except (ParseError, ParserDependencyError) as exc:
+            if not collect_errors:
+                raise
+            outcomes.append(
+                ComparisonOutcome(implementation, "error", _safe_code(exc.code))
+            )
+        else:
+            results[implementation] = result
+            outcomes.append(
+                ComparisonOutcome(
+                    implementation,
+                    "success",
+                    transaction_count=len(result.transactions),
+                    validation_status=result.validation.status,
+                )
+            )
+    if not collect_errors:
+        return compare_results(results)
+    comparison = compare_results(results) if len(results) >= 2 else None
+    complete = len(results) == len(selected)
+    return ComparisonRunReport(
+        format=format_name,
+        implementations=selected,
+        matches=bool(complete and comparison is not None and comparison.matches),
+        differences=comparison.differences if comparison is not None else (),
+        outcomes=tuple(outcomes),
+        complete=complete,
+    )
 
 
 def compare_results(results: Mapping[str, ParseResult]) -> ComparisonReport:

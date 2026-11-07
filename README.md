@@ -315,6 +315,14 @@ Comparison exit codes are `0` for completion (or a match when using
 `--fail-on-diff`), `4` for an opted-in mismatch and `2` for an error. Exit `3`
 remains specific to parse validation. Equal validation failures or warnings can
 still compare equal; comparison is not an import-readiness check.
+To inspect parser disagreement caused by failures, opt into
+`compare(path, collect_errors=True)` or `bankparser compare FILE --collect-errors`.
+This retains each parser's success/error code, transaction count and validation
+status. Successful outputs are compared when at least two exist. An incomplete
+run reports `complete: false`, `matches: false`, writes its report to stdout and
+exits 2. Existing calls keep the fail-fast behavior. See the
+[comparison outcome contract](docs/api.md#collect-parser-outcomes).
+
 `implementations(format)` lists configured names, even when an optional
 dependency is absent.
 

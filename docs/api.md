@@ -195,7 +195,7 @@ review-token semantics, reason fields and limitations.
 `implementations(format)` lists configured names without importing optional
 backends. It does not certify their dependencies are installed.
 
-`compare(source, *, implementations=None, csv_options=None, csv_profile=None, format=None)` reads one bounded input snapshot,
+`compare(source, *, implementations=None, csv_options=None, csv_profile=None, format=None, collect_errors=False)` reads one bounded input snapshot,
 runs the selected implementations and returns `ComparisonReport`: `format`,
 `implementations`, `matches` and `differences`. Each difference contains a field
 path, serialized `values` from each implementation, and a `present` boolean map.
@@ -204,7 +204,8 @@ and `present[name] = false`; a present null has `present[name] = true`.
 Empty strings and literal `"<missing>"` text remain ordinary present values.
 Presence refers to the flattened canonical result path, not proof that a bank
 source field existed. Provenance/raw metadata are excluded.
-At least two distinct implementations are required; failures abort comparison.
+At least two distinct implementations are required; failures abort comparison
+by default. Set `collect_errors=True` to retain expected parser/dependency failures.
 An explicit selection runs only those implementations, without invoking an
 unselected default. Omitted selection uses all configured implementations.
 
@@ -265,10 +266,44 @@ Errors go to stderr; `--json-errors` uses the same `error` object with `code`,
 `message` and nullable `location` as the parse command. Without it errors remain
 human-readable. Argument/usage errors use argparse text on stderr with exit 2,
 except when redacted diagnostic output is requested (see below).
-Errors take precedence over mismatch handling; no partial comparison report is
-returned. Parse validation exit 3 and Python `compare` behavior are unchanged.
+Errors take precedence over mismatch handling in the default mode. Parse
+validation exit 3 is unchanged.
 Matching output can include identical failed/skipped validation checks; this
 flag checks agreement, not import readiness or independent correctness.
+
+### Collect parser outcomes
+
+`compare(source, collect_errors=True)` returns `ComparisonRunReport`, a subclass
+of `ComparisonReport` with `complete` and ordered `outcomes`. Each
+`ComparisonOutcome` contains `implementation`, `status` (`success` or `error`),
+`error_code`, `transaction_count` and `validation_status`; unavailable fields are
+null. Error codes use the built-in allowlist (`UNKNOWN_CODE` for custom codes).
+Exception messages, causes and source locations are not included in outcomes.
+These three report classes are public imports from `bankparser`.
+
+Expected parse and missing-dependency errors are collected and later selected
+implementations still run. Input, format, configuration and unknown-implementation
+errors, and unexpected programming exceptions, still abort. The default
+`collect_errors=False` and `compare_results(mapping)` retain their existing
+behavior and serialized report shape.
+
+`differences` compares only successful implementations and is empty with fewer
+than two successes. `complete` is true only when every selected implementation
+succeeds; `matches` is false for every incomplete run, including when all parsers
+fail or the successful subset agrees. A successful parse may still have failed
+validation; that status is reported separately and does not select a winner.
+
+```bash
+bankparser compare statement.mt940 --collect-errors --fail-on-diff
+```
+
+With `--collect-errors`, completed and incomplete run reports go to stdout.
+An incomplete run exits **2**, including when `--fail-on-diff` is set; its
+per-implementation error codes are in the report and stderr is empty. Complete
+runs retain exits 0/4 described above. Errors outside collection still use the
+ordinary stderr error path. All output policies support the new report;
+redacted output retains safe outcome facts for built-in implementations and
+omits custom implementation names and all difference values.
 
 ## Structured diagnostics
 
