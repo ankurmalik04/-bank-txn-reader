@@ -18,7 +18,7 @@ from bankparser.parsers.mt940.source import (
     balance_currency,
     source_fields,
 )
-from bankparser.parsers.scalars import is_missing_scalar
+from bankparser.parsers.scalars import currency_text, is_missing_scalar
 from bankparser.parsers.scalars import scalar_text as _text
 
 _OPENING_DATE_PATTERN = re.compile(rb"(?m)^:60[FM]:[CD](\d{6})")
@@ -252,5 +252,4 @@ def _statement_identity(value: Any) -> tuple[str | None, str | None]:
 
 
 def _currency(value: Any) -> str | None:
-    text = _text(value)
-    return text.upper() if text is not None else None
+    return currency_text(value, location="MT940/currency")

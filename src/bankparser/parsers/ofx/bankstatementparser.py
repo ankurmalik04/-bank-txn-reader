@@ -18,6 +18,7 @@ from bankparser.parsers.ofx.encoding import (
     _decode_ofx as _decode_ofx,  # noqa: PLC0414 -- keep the existing helper import path
 )
 from bankparser.parsers.scalars import (
+    currency_text,
     is_missing_scalar,
     validate_amount_text,
 )
@@ -246,8 +247,7 @@ def _optional_ofx_date(value: Any) -> date | None:
 
 
 def _currency(value: Any) -> str | None:
-    text = _text(value)
-    return text.upper() if text is not None else None
+    return currency_text(value, location="OFX/currency")
 
 
 def _first_not_none(*values: Any) -> Any:

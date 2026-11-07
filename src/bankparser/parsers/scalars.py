@@ -6,6 +6,7 @@ import re
 from decimal import Decimal
 from typing import Any
 
+from bankparser.currencies import is_currency_code
 from bankparser.errors import ParseError
 
 _PLAIN_AMOUNT = re.compile(r"[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)")
@@ -47,3 +48,13 @@ def validate_amount_text(value: str | None, *, location: str) -> None:
             code="INVALID_AMOUNT",
             location=location,
         )
+
+
+def currency_text(value: Any, *, location: str) -> str | None:
+    """Validate original ASCII syntax before normalizing optional currency text."""
+    text = scalar_text(value)
+    if text is not None and not is_currency_code(text):
+        raise ParseError(
+            "Invalid currency code", code="INVALID_CURRENCY", location=location
+        )
+    return text.upper() if text is not None else None
