@@ -33,6 +33,7 @@ Issues = "https://github.com/ankurmalik04/-bank-txn-reader/issues"
 [project.optional-dependencies]
 alternative = [
     "bankstatementparser==0.0.20",
+    "defusedxml>=0.7.1,<0.8",
     "lxml>=6.1.3,<7",
 ]
 camt = [

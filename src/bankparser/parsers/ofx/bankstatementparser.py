@@ -12,15 +12,15 @@ from tempfile import TemporaryDirectory
 from typing import Any
 
 from bankparser.errors import ParseError, ParserDependencyError, dependency_install_hint
-from bankparser.models import Account, Counterparty, Statement, Transaction, Warning
+from bankparser.models import Counterparty, Transaction, Warning
 from bankparser.parsers.base import CanonicalData, ParseContext
 from bankparser.parsers.ofx.encoding import (
     _decode_ofx as _decode_ofx,  # noqa: PLC0414 -- keep the existing helper import path
 )
+from bankparser.parsers.ofx.source import read_source
 from bankparser.parsers.scalars import (
     currency_text,
     is_missing_scalar,
-    validate_amount_text,
 )
 from bankparser.parsers.scalars import (
     scalar_text as _text,
@@ -51,13 +51,8 @@ class BankStatementParserOfxAdapter:
         return getattr(self._package, "__version__", None)
 
     def parse(self, data: bytes, context: ParseContext) -> CanonicalData:
-        text = _decode_ofx(data)
-
-        scope = _single_statement_scope(text)
-        for match in re.finditer(
-            r"<(TRNAMT|BALAMT)>\s*([^<\r\n]*)", scope, flags=re.IGNORECASE
-        ):
-            validate_amount_text(match[2], location=f"OFX/{match[1].upper()}")
+        evidence = read_source(data)
+        canonical = evidence.canonical
 
         try:
             with TemporaryDirectory(prefix="bankparser-") as directory:
@@ -65,7 +60,7 @@ class BankStatementParserOfxAdapter:
                 if suffix not in {".ofx", ".qfx"}:
                     suffix = ".ofx"
                 source = Path(directory) / f"statement{suffix}"
-                source.write_bytes(text.encode("utf-8"))
+                source.write_bytes(evidence.backend_input)
 
                 parser = self._parser_class(source)
                 frame = parser.parse()
@@ -74,82 +69,108 @@ class BankStatementParserOfxAdapter:
         except ParseError:
             raise
         except Exception as exc:
-            raise ParseError(
-                "bankstatementparser OFX/QFX parser failed"
-            ) from exc
+            raise ParseError("bankstatementparser OFX/QFX parser failed") from exc
 
-        if len(summaries) != 1:
-            raise ParseError(
-                "bankstatementparser returned "
-                f"{len(summaries)} OFX account/currency scopes; "
-                "BankParser currently expects one"
-            )
-
-        summary = summaries[0]
-        if not isinstance(summary, Mapping):
-            raise ParseError("bankstatementparser returned an invalid OFX summary")
-
-        currency = _first_not_none(
-            _currency(summary.get("currency")),
-            _currency(_tag_value(scope, "CURDEF")),
-        )
-        account_id = _first_not_none(
-            _text(summary.get("account_id")),
-            _text(_tag_value(scope, "ACCTID")),
-        )
-
-        transactions = tuple(
-            _map_transaction(record, statement_currency=currency) for record in records
-        )
-        source_count = len(re.findall(r"<STMTTRN>", scope, flags=re.IGNORECASE))
-        if source_count != len(transactions):
+        if len(records) != len(canonical.transactions):
             raise ParseError(
                 "OFX source and parser transaction counts differ",
                 code="TRANSACTION_COUNT_MISMATCH",
                 location="BANKTRANLIST/STMTTRN",
             )
-
-        opening = _optional_decimal(summary.get("opening_balance"))
-        closing = _first_not_none(
-            _optional_decimal(summary.get("closing_balance")),
-            _optional_decimal(_container_tag_value(scope, "LEDGERBAL", "BALAMT")),
+        if not summaries and not records:
+            return CanonicalData(
+                canonical.account,
+                canonical.statement,
+                canonical.transactions,
+                _empty_backend_warnings(canonical, {}),
+            )
+        if len(summaries) != 1:
+            raise ParseError(
+                "OFX backend returned an unexpected account count",
+                code="OFX_BACKEND_MISMATCH",
+                location="OFX",
+            )
+        summary = summaries[0]
+        if not isinstance(summary, Mapping):
+            raise ParseError("bankstatementparser returned an invalid OFX summary")
+        # Empty backend summaries carry no account/currency evidence.
+        backend_account = _text(summary.get("account_id"))
+        backend_currency = _currency(summary.get("currency"))
+        if not records:
+            backend_account = backend_account or canonical.account.id
+            backend_currency = backend_currency or canonical.account.currency
+        transactions = tuple(
+            _map_transaction(record, statement_currency=canonical.account.currency)
+            for record in records
         )
-
-        warnings: list[Warning] = []
-        if currency is None:
-            warnings.append(
-                Warning("MISSING_CURRENCY", "Statement currency is unavailable")
+        if (
+            backend_account != canonical.account.id
+            or backend_currency != canonical.account.currency
+            or _text(summary.get("opening_balance")) is not None
+            or (
+                not is_missing_scalar(summary.get("closing_balance"))
+                and (
+                    _optional_decimal(summary.get("closing_balance")) is None
+                    or _optional_decimal(summary.get("closing_balance"))
+                    != canonical.statement.closing_balance
+                )
             )
-        if opening is None:
-            warnings.append(
-                Warning("MISSING_OPENING_BALANCE", "Opening balance is unavailable")
+            or any(
+                actual.amount != expected.amount
+                or actual.transaction_id != expected.transaction_id
+                or actual.currency != expected.currency
+                or actual.booking_date != expected.booking_date
+                or (
+                    _text(record.get("account_id")) is not None
+                    and _text(record.get("account_id")) != canonical.account.id
+                )
+                for actual, expected, record in zip(
+                    transactions, canonical.transactions, records
+                )
             )
-        if closing is None:
-            warnings.append(
-                Warning("MISSING_CLOSING_BALANCE", "Closing balance is unavailable")
+        ):
+            raise ParseError(
+                "OFX source and backend financial fields differ",
+                code="OFX_BACKEND_MISMATCH",
+                location="OFX",
             )
-
-        start_date = _optional_ofx_date(_tag_value(scope, "DTSTART"))
-        end_date = _first_not_none(
-            _optional_ofx_date(_tag_value(scope, "DTEND")),
-            _optional_ofx_date(_container_tag_value(scope, "LEDGERBAL", "DTASOF")),
-        )
-
         return CanonicalData(
-            account=Account(id=account_id, iban=None, currency=currency),
-            statement=Statement(
-                id=None,
-                sequence=None,
-                start_date=start_date,
-                end_date=end_date,
-                opening_balance=opening,
-                closing_balance=closing,
-                opening_balance_currency=currency if opening is not None else None,
-                closing_balance_currency=currency if closing is not None else None,
-            ),
-            transactions=transactions,
-            warnings=tuple(warnings),
+            canonical.account,
+            canonical.statement,
+            transactions,
+            canonical.warnings if records else _empty_backend_warnings(canonical, summary),
         )
+
+
+def _empty_backend_warnings(
+    canonical: CanonicalData, summary: Mapping[str, Any]
+) -> tuple[Warning, ...]:
+    """Expose source-only financial fields without certifying other metadata."""
+    missing = [
+        name
+        for name, source, backend in (
+            ("account", canonical.account.id, _text(summary.get("account_id"))),
+            ("currency", canonical.account.currency, _text(summary.get("currency"))),
+            (
+                "closing balance",
+                canonical.statement.closing_balance,
+                _optional_decimal(summary.get("closing_balance")),
+            ),
+        )
+        if source is not None and backend is None
+    ]
+    if not missing:
+        return canonical.warnings
+    return (
+        *canonical.warnings,
+        Warning(
+            "OFX_BACKEND_UNVERIFIED",
+            "OFX backend did not corroborate empty-statement fields: "
+            + ", ".join(missing)
+            + "; values come from source",
+            location="OFX",
+        ),
+    )
 
 
 def _map_transaction(
