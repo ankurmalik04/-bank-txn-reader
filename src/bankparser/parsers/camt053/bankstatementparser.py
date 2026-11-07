@@ -51,6 +51,7 @@ class BankStatementParserCamt053Adapter:
                 f"bankstatementparser CAMT.053 parser failed: {exc}"
             ) from exc
 
+        _validate_financial_paths(tree)
         statements = tree.findall(".//Stmt")
         if len(statements) != 1:
             raise ParseError(
@@ -215,6 +216,7 @@ def _map_transaction(
 
 
 def _validate_source(statement: Any) -> None:
+    _validate_financial_paths(statement)
     _validate_account(statement)
     for index, amount in enumerate(statement.iter("Amt"), start=1):
         validate_amount_text(amount.text, location=f"Stmt//Amt[{index}]")
@@ -282,6 +284,44 @@ def _validate_source(statement: Any) -> None:
                 code="CAMT_BATCH_TOTAL_MISMATCH",
                 location=location,
             )
+
+
+def _validate_financial_paths(root: Any) -> None:
+    """Check normalized CAMT names, leaving foreign namespace metadata alone."""
+    prefix = () if root.tag == "Stmt" else ("Document", "BkToCstmrStmt")
+    statement_path = (*prefix, "Stmt")
+    supported = {
+        "Stmt": statement_path,
+        "Acct": (*statement_path, "Acct"),
+        "Ntry": (*statement_path, "Ntry"),
+        "Bal": (*statement_path, "Bal"),
+        "TxDtls": (*statement_path, "Ntry", "NtryDtls", "TxDtls"),
+    }
+    pending: list[tuple[Any, tuple[str, ...], str]] = [
+        (root, (str(root.tag),), str(root.tag))
+    ]
+    while pending:
+        node, path, location = pending.pop()
+        if node.tag in supported and path != supported[node.tag]:
+            raise ParseError(
+                "CAMT financial record is outside a supported source path",
+                code="INVALID_CAMT_FINANCIAL_STRUCTURE",
+                location=location,
+            )
+        counts: dict[str, int] = {}
+        children: list[tuple[Any, tuple[str, ...], str]] = []
+        for child in node:
+            if not isinstance(child.tag, str):
+                continue
+            counts[child.tag] = counts.get(child.tag, 0) + 1
+            children.append(
+                (
+                    child,
+                    (*path, child.tag),
+                    f"{location}/{child.tag}[{counts[child.tag]}]",
+                )
+            )
+        pending.extend(reversed(children))
 
 
 def _validate_account(statement: Any) -> None:
