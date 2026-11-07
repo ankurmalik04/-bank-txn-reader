@@ -51,7 +51,7 @@ class WolphMt940Adapter:
         try:
             statements = self._mt940.parse_statements(data, options=options)
         except Exception as exc:  # library exposes several parse exception types
-            raise ParseError(f"WoLpH MT940 parser failed: {exc}") from exc
+            raise ParseError("WoLpH MT940 parser failed") from exc
 
         if len(statements) != 1:
             raise ParseError(
@@ -178,7 +178,7 @@ def _amount(value: Any) -> Decimal:
         return amount
     if isinstance(value, Decimal) and value.is_finite():
         return value
-    raise ParseError(f"Parser returned an invalid amount: {value!r}")
+    raise ParseError("Parser returned an invalid amount")
 
 
 def _balance(value: Any) -> Decimal | None:

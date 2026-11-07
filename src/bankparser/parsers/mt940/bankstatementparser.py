@@ -61,7 +61,7 @@ class BankStatementParserMt940Adapter:
                 summaries = parser.get_summaries()
                 records = frame.to_dict("records")
         except Exception as exc:
-            raise ParseError(f"bankstatementparser MT940 parser failed: {exc}") from exc
+            raise ParseError("bankstatementparser MT940 parser failed") from exc
 
         if len(summaries) != 1:
             raise ParseError(
@@ -205,7 +205,7 @@ def _mt940_date_from_match(match: re.Match[bytes] | None) -> date | None:
 def _required_decimal(value: Any) -> Decimal:
     parsed = _optional_decimal(value)
     if parsed is None:
-        raise ParseError(f"Parser returned an invalid amount: {value!r}")
+        raise ParseError("Parser returned an invalid amount")
     return parsed
 
 
@@ -240,7 +240,7 @@ def _optional_date(value: Any) -> date | None:
             return date(int(text[:4]), int(text[4:6]), int(text[6:8]))
         except ValueError:
             pass
-    raise ParseError(f"Parser returned an invalid date: {value!r}")
+    raise ParseError("Parser returned an invalid date")
 
 
 def _statement_identity(value: Any) -> tuple[str | None, str | None]:

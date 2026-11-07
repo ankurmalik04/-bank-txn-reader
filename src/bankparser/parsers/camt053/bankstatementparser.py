@@ -49,7 +49,7 @@ class BankStatementParserCamt053Adapter:
             tree = parser.tree
         except Exception as exc:
             raise ParseError(
-                f"bankstatementparser CAMT.053 parser failed: {exc}"
+                "bankstatementparser CAMT.053 parser failed"
             ) from exc
 
         _validate_financial_paths(tree)
@@ -69,7 +69,7 @@ class BankStatementParserCamt053Adapter:
             summaries = parser.get_summaries()
         except Exception as exc:
             raise ParseError(
-                f"bankstatementparser CAMT.053 parser failed: {exc}"
+                "bankstatementparser CAMT.053 parser failed"
             ) from exc
         if len(source_transactions) != len(transaction_records):
             raise ParseError(
@@ -677,7 +677,7 @@ def _balance_date(records: list[dict[str, Any]], code: str) -> date | None:
 def _required_decimal(value: Any) -> Decimal:
     parsed = _optional_decimal(value)
     if parsed is None:
-        raise ParseError(f"Parser returned an invalid amount: {value!r}")
+        raise ParseError("Parser returned an invalid amount")
     return parsed
 
 
@@ -706,7 +706,7 @@ def _optional_date(value: Any) -> date | None:
     try:
         return date.fromisoformat(text[:10])
     except ValueError as exc:
-        raise ParseError(f"Parser returned an invalid date: {value!r}") from exc
+        raise ParseError("Parser returned an invalid date") from exc
 
 
 def _meaningful_reference(value: Any) -> str | None:

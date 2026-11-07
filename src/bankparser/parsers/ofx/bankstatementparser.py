@@ -75,7 +75,7 @@ class BankStatementParserOfxAdapter:
             raise
         except Exception as exc:
             raise ParseError(
-                f"bankstatementparser OFX/QFX parser failed: {exc}"
+                "bankstatementparser OFX/QFX parser failed"
             ) from exc
 
         if len(summaries) != 1:
@@ -211,7 +211,7 @@ def _container_tag_value(source: str, container: str, tag: str) -> str | None:
 def _required_decimal(value: Any) -> Decimal:
     parsed = _optional_decimal(value)
     if parsed is None:
-        raise ParseError(f"Parser returned an invalid amount: {value!r}")
+        raise ParseError("Parser returned an invalid amount")
     return parsed
 
 
@@ -239,11 +239,11 @@ def _optional_ofx_date(value: Any) -> date | None:
         return None
     compact = text[:8]
     if len(compact) != 8 or not compact.isdigit():
-        raise ParseError(f"Parser returned an invalid OFX date: {value!r}")
+        raise ParseError("Parser returned an invalid OFX date")
     try:
         return date(int(compact[:4]), int(compact[4:6]), int(compact[6:8]))
     except ValueError as exc:
-        raise ParseError(f"Parser returned an invalid OFX date: {value!r}") from exc
+        raise ParseError("Parser returned an invalid OFX date") from exc
 
 
 def _currency(value: Any) -> str | None:

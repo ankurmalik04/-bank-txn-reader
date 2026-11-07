@@ -85,7 +85,7 @@ class BankStatementParserCsvAdapter:
                         writer.writerow(row)
                 records = self._parser_class(source).parse().to_dict("records")
         except Exception as exc:
-            raise ParseError(f"bankstatementparser CSV parser failed: {exc}") from exc
+            raise ParseError("bankstatementparser CSV parser failed") from exc
         if len(records) != len(canonical.transactions):
             raise ParseError(
                 "CSV source and parser transaction counts differ",
