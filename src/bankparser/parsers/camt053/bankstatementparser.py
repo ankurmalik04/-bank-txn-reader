@@ -215,6 +215,7 @@ def _map_transaction(
 
 
 def _validate_source(statement: Any) -> None:
+    _validate_account(statement)
     for index, amount in enumerate(statement.iter("Amt"), start=1):
         validate_amount_text(amount.text, location=f"Stmt//Amt[{index}]")
         if Decimal(amount.text).is_signed():
@@ -281,6 +282,36 @@ def _validate_source(statement: Any) -> None:
                 code="CAMT_BATCH_TOTAL_MISMATCH",
                 location=location,
             )
+
+
+def _validate_account(statement: Any) -> None:
+    accounts = statement.findall("Acct")
+    if len(accounts) != 1:
+        raise ParseError(
+            "CAMT requires exactly one statement account",
+            code="AMBIGUOUS_CAMT_ACCOUNT",
+            location="Stmt/Acct",
+        )
+    account = accounts[0]
+    if len(account.findall("Ccy")) > 1:
+        raise ParseError(
+            "CAMT account contains repeated currency elements",
+            code="AMBIGUOUS_CAMT_ACCOUNT",
+            location="Stmt/Acct/Ccy",
+        )
+    for path in ("Id", "Id/IBAN", "Id/Othr", "Id/Othr/Id"):
+        if len(account.findall(path)) > 1:
+            raise ParseError(
+                "CAMT account contains a repeated identity choice",
+                code="AMBIGUOUS_CAMT_ACCOUNT",
+                location="Stmt/Acct/" + path,
+            )
+    if account.find("Id/IBAN") is not None and account.find("Id/Othr") is not None:
+        raise ParseError(
+            "CAMT account must use a single identity choice",
+            code="AMBIGUOUS_CAMT_ACCOUNT",
+            location="Stmt/Acct/Id",
+        )
 
 
 def _source_direction(node: Any, *, location: str, fallback: str | None = None) -> str:

@@ -23,7 +23,7 @@ def test_camt_guard_also_checks_nested_detail_magnitudes():
     from xml.etree import ElementTree
 
     statement = ElementTree.fromstring(
-        "<Stmt><Ntry><Amt>18.75</Amt><Sts>BOOK</Sts><NtryDtls><TxDtls><AmtDtls><TxAmt><Amt>-18.75</Amt></TxAmt></AmtDtls></TxDtls></NtryDtls></Ntry></Stmt>"
+        "<Stmt><Acct/><Ntry><Amt>18.75</Amt><Sts>BOOK</Sts><NtryDtls><TxDtls><AmtDtls><TxAmt><Amt>-18.75</Amt></TxAmt></AmtDtls></TxDtls></NtryDtls></Ntry></Stmt>"
     )
     with pytest.raises(ParseError) as caught:
         camt._validate_source(statement)

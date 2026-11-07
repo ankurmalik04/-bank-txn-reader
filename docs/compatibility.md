@@ -355,3 +355,9 @@ full account/statement/transaction expectations. This adds no production profile
 certification. Configured raw provenance and CONFIGURED_CURRENCY are additive;
 canonical schema remains 1.1. The optional adapter's normalization/count check
 continues to share native extraction rather than providing independent agreement.
+
+CAMT statements require exactly one direct `Acct` container. Repeated account
+containers, repeated identity choices, or simultaneous IBAN and other identity
+choices are rejected with `AMBIGUOUS_CAMT_ACCOUNT`, even when values agree.
+A single account with no identifier retains the missing-identity warning and
+import-policy behavior.
