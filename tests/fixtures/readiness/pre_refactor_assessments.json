@@ -1,0 +1,658 @@
+{
+  "duplicate-review": {
+    "assessment_schema_version": "1",
+    "status": "review",
+    "policy": {
+      "id": "default",
+      "version": "1",
+      "booking_date": "block",
+      "value_date": "ignore",
+      "transaction_currency": "block",
+      "account_identity": "review",
+      "description": "ignore",
+      "reference": "ignore",
+      "opening_balance": "ignore",
+      "closing_balance": "ignore",
+      "statement_period": "ignore",
+      "duplicate_candidates": "review",
+      "configured_currency": "review",
+      "value_date_outside_period": "review",
+      "other_incomplete_checks": "review",
+      "other_warnings": "review",
+      "empty_activity": "review",
+      "allow_destination_account": true,
+      "value_date_exempt_formats": []
+    },
+    "destination": null,
+    "account_origin": "source",
+    "result_fingerprint": "0f0b8b5f0aae9d3f761bef3372b3fc177e6955d2b3ec9be7b9d6785e52627f19",
+    "recorded_validation_status": "passed",
+    "validation": {
+      "status": "passed",
+      "checks": [
+        {
+          "code": "BALANCE_RECONCILIATION",
+          "status": "passed",
+          "message": "Opening balance plus transactions equals closing balance",
+          "expected": "95.00",
+          "actual": "95.00"
+        },
+        {
+          "code": "CURRENCY_CONSISTENCY",
+          "status": "passed",
+          "message": "Canonical data uses one currency: GBP",
+          "expected": null,
+          "actual": null
+        },
+        {
+          "code": "FINITE_AMOUNTS",
+          "status": "passed",
+          "message": "All canonical monetary values are finite decimals",
+          "expected": null,
+          "actual": null
+        },
+        {
+          "code": "STATEMENT_DATE_ORDER",
+          "status": "passed",
+          "message": "Statement start date does not exceed end date",
+          "expected": "start_date <= 2026-10-02",
+          "actual": "2026-10-01"
+        },
+        {
+          "code": "TRANSACTION_CURRENCIES",
+          "status": "passed",
+          "message": "Every transaction has a currency (empty activity is complete)",
+          "expected": null,
+          "actual": null
+        },
+        {
+          "code": "TRANSACTION_BOOKING_DATES",
+          "status": "passed",
+          "message": "All booking_date values lie within the inclusive statement period",
+          "expected": null,
+          "actual": null
+        },
+        {
+          "code": "TRANSACTION_VALUE_DATES",
+          "status": "passed",
+          "message": "All value_date values lie within the inclusive statement period",
+          "expected": null,
+          "actual": null
+        },
+        {
+          "code": "CURRENCY_FORMAT",
+          "status": "passed",
+          "message": "All nonblank currencies contain three ASCII letters",
+          "expected": null,
+          "actual": null
+        },
+        {
+          "code": "ACCOUNT_IDENTITY",
+          "status": "passed",
+          "message": "An account identifier is available (not independently verified)",
+          "expected": null,
+          "actual": null
+        }
+      ]
+    },
+    "reasons": [
+      {
+        "code": "DUPLICATE_CANDIDATE",
+        "severity": "review",
+        "path": "transactions",
+        "transaction_indices": [
+          0,
+          1
+        ],
+        "message": "Candidate repeated identity or similar record; never automatically removed",
+        "source_code": "transaction-id"
+      }
+    ],
+    "duplicate_candidates": [
+      {
+        "kind": "transaction-id",
+        "transaction_indices": [
+          0,
+          1
+        ],
+        "fingerprint": "d128245d1d1e78e27659cd2dcb82aa1340bf646bc30f9457991a23b3e59902eb",
+        "reviewed": false
+      }
+    ]
+  },
+  "duplicate-reviewed": {
+    "assessment_schema_version": "1",
+    "status": "ready",
+    "policy": {
+      "id": "default",
+      "version": "1",
+      "booking_date": "block",
+      "value_date": "ignore",
+      "transaction_currency": "block",
+      "account_identity": "review",
+      "description": "ignore",
+      "reference": "ignore",
+      "opening_balance": "ignore",
+      "closing_balance": "ignore",
+      "statement_period": "ignore",
+      "duplicate_candidates": "review",
+      "configured_currency": "review",
+      "value_date_outside_period": "review",
+      "other_incomplete_checks": "review",
+      "other_warnings": "review",
+      "empty_activity": "review",
+      "allow_destination_account": true,
+      "value_date_exempt_formats": []
+    },
+    "destination": null,
+    "account_origin": "source",
+    "result_fingerprint": "0f0b8b5f0aae9d3f761bef3372b3fc177e6955d2b3ec9be7b9d6785e52627f19",
+    "recorded_validation_status": "passed",
+    "validation": {
+      "status": "passed",
+      "checks": [
+        {
+          "code": "BALANCE_RECONCILIATION",
+          "status": "passed",
+          "message": "Opening balance plus transactions equals closing balance",
+          "expected": "95.00",
+          "actual": "95.00"
+        },
+        {
+          "code": "CURRENCY_CONSISTENCY",
+          "status": "passed",
+          "message": "Canonical data uses one currency: GBP",
+          "expected": null,
+          "actual": null
+        },
+        {
+          "code": "FINITE_AMOUNTS",
+          "status": "passed",
+          "message": "All canonical monetary values are finite decimals",
+          "expected": null,
+          "actual": null
+        },
+        {
+          "code": "STATEMENT_DATE_ORDER",
+          "status": "passed",
+          "message": "Statement start date does not exceed end date",
+          "expected": "start_date <= 2026-10-02",
+          "actual": "2026-10-01"
+        },
+        {
+          "code": "TRANSACTION_CURRENCIES",
+          "status": "passed",
+          "message": "Every transaction has a currency (empty activity is complete)",
+          "expected": null,
+          "actual": null
+        },
+        {
+          "code": "TRANSACTION_BOOKING_DATES",
+          "status": "passed",
+          "message": "All booking_date values lie within the inclusive statement period",
+          "expected": null,
+          "actual": null
+        },
+        {
+          "code": "TRANSACTION_VALUE_DATES",
+          "status": "passed",
+          "message": "All value_date values lie within the inclusive statement period",
+          "expected": null,
+          "actual": null
+        },
+        {
+          "code": "CURRENCY_FORMAT",
+          "status": "passed",
+          "message": "All nonblank currencies contain three ASCII letters",
+          "expected": null,
+          "actual": null
+        },
+        {
+          "code": "ACCOUNT_IDENTITY",
+          "status": "passed",
+          "message": "An account identifier is available (not independently verified)",
+          "expected": null,
+          "actual": null
+        }
+      ]
+    },
+    "reasons": [],
+    "duplicate_candidates": [
+      {
+        "kind": "transaction-id",
+        "transaction_indices": [
+          0,
+          1
+        ],
+        "fingerprint": "d128245d1d1e78e27659cd2dcb82aa1340bf646bc30f9457991a23b3e59902eb",
+        "reviewed": true
+      }
+    ]
+  },
+  "permissive-missing-fields": {
+    "assessment_schema_version": "1",
+    "status": "ready",
+    "policy": {
+      "id": "default",
+      "version": "1",
+      "booking_date": "ignore",
+      "value_date": "ignore",
+      "transaction_currency": "ignore",
+      "account_identity": "ignore",
+      "description": "ignore",
+      "reference": "ignore",
+      "opening_balance": "ignore",
+      "closing_balance": "ignore",
+      "statement_period": "ignore",
+      "duplicate_candidates": "ignore",
+      "configured_currency": "ignore",
+      "value_date_outside_period": "ignore",
+      "other_incomplete_checks": "ignore",
+      "other_warnings": "ignore",
+      "empty_activity": "ignore",
+      "allow_destination_account": true,
+      "value_date_exempt_formats": []
+    },
+    "destination": null,
+    "account_origin": "source",
+    "result_fingerprint": "a5ea9a64b1d37328b1503128225d0a7880638500173c1246cc2d755cbe616926",
+    "recorded_validation_status": "passed",
+    "validation": {
+      "status": "warning",
+      "checks": [
+        {
+          "code": "BALANCE_RECONCILIATION",
+          "status": "passed",
+          "message": "Opening balance plus transactions equals closing balance",
+          "expected": "97.50",
+          "actual": "97.50"
+        },
+        {
+          "code": "CURRENCY_CONSISTENCY",
+          "status": "passed",
+          "message": "Canonical data uses one currency: GBP",
+          "expected": null,
+          "actual": null
+        },
+        {
+          "code": "FINITE_AMOUNTS",
+          "status": "passed",
+          "message": "All canonical monetary values are finite decimals",
+          "expected": null,
+          "actual": null
+        },
+        {
+          "code": "STATEMENT_DATE_ORDER",
+          "status": "skipped",
+          "message": "Both statement date bounds are required to check their order",
+          "expected": null,
+          "actual": null
+        },
+        {
+          "code": "TRANSACTION_CURRENCIES",
+          "status": "passed",
+          "message": "Every transaction has a currency (empty activity is complete)",
+          "expected": null,
+          "actual": null
+        },
+        {
+          "code": "TRANSACTION_BOOKING_DATES",
+          "status": "skipped",
+          "message": "Both period bounds and all transaction dates are required; missing date indices: none",
+          "expected": null,
+          "actual": null
+        },
+        {
+          "code": "TRANSACTION_VALUE_DATES",
+          "status": "skipped",
+          "message": "Both period bounds and all transaction dates are required; missing date indices: none",
+          "expected": null,
+          "actual": null
+        },
+        {
+          "code": "CURRENCY_FORMAT",
+          "status": "passed",
+          "message": "All nonblank currencies contain three ASCII letters",
+          "expected": null,
+          "actual": null
+        },
+        {
+          "code": "ACCOUNT_IDENTITY",
+          "status": "passed",
+          "message": "An account identifier is available (not independently verified)",
+          "expected": null,
+          "actual": null
+        }
+      ]
+    },
+    "reasons": [],
+    "duplicate_candidates": []
+  },
+  "destination-mapping": {
+    "assessment_schema_version": "1",
+    "status": "ready",
+    "policy": {
+      "id": "default",
+      "version": "1",
+      "booking_date": "block",
+      "value_date": "ignore",
+      "transaction_currency": "block",
+      "account_identity": "review",
+      "description": "ignore",
+      "reference": "ignore",
+      "opening_balance": "ignore",
+      "closing_balance": "ignore",
+      "statement_period": "ignore",
+      "duplicate_candidates": "review",
+      "configured_currency": "review",
+      "value_date_outside_period": "review",
+      "other_incomplete_checks": "review",
+      "other_warnings": "review",
+      "empty_activity": "review",
+      "allow_destination_account": true,
+      "value_date_exempt_formats": []
+    },
+    "destination": {
+      "id": "ledger-7",
+      "currency": "GBP",
+      "source_account_id": null,
+      "source_iban": null,
+      "mapping_confirmed": true
+    },
+    "account_origin": "destination-context",
+    "result_fingerprint": "fefaaefc6a5f30ff8342bb24c0264755fe95e6a1e543e599fadd2a0e2c72714a",
+    "recorded_validation_status": "passed",
+    "validation": {
+      "status": "warning",
+      "checks": [
+        {
+          "code": "BALANCE_RECONCILIATION",
+          "status": "passed",
+          "message": "Opening balance plus transactions equals closing balance",
+          "expected": "97.50",
+          "actual": "97.50"
+        },
+        {
+          "code": "CURRENCY_CONSISTENCY",
+          "status": "passed",
+          "message": "Canonical data uses one currency: GBP",
+          "expected": null,
+          "actual": null
+        },
+        {
+          "code": "FINITE_AMOUNTS",
+          "status": "passed",
+          "message": "All canonical monetary values are finite decimals",
+          "expected": null,
+          "actual": null
+        },
+        {
+          "code": "STATEMENT_DATE_ORDER",
+          "status": "passed",
+          "message": "Statement start date does not exceed end date",
+          "expected": "start_date <= 2026-10-02",
+          "actual": "2026-10-01"
+        },
+        {
+          "code": "TRANSACTION_CURRENCIES",
+          "status": "passed",
+          "message": "Every transaction has a currency (empty activity is complete)",
+          "expected": null,
+          "actual": null
+        },
+        {
+          "code": "TRANSACTION_BOOKING_DATES",
+          "status": "passed",
+          "message": "All booking_date values lie within the inclusive statement period",
+          "expected": null,
+          "actual": null
+        },
+        {
+          "code": "TRANSACTION_VALUE_DATES",
+          "status": "passed",
+          "message": "All value_date values lie within the inclusive statement period",
+          "expected": null,
+          "actual": null
+        },
+        {
+          "code": "CURRENCY_FORMAT",
+          "status": "passed",
+          "message": "All nonblank currencies contain three ASCII letters",
+          "expected": null,
+          "actual": null
+        },
+        {
+          "code": "ACCOUNT_IDENTITY",
+          "status": "skipped",
+          "message": "Account identity is missing; select and verify the destination account",
+          "expected": null,
+          "actual": null
+        }
+      ]
+    },
+    "reasons": [],
+    "duplicate_candidates": []
+  },
+  "destination-conflict": {
+    "assessment_schema_version": "1",
+    "status": "not-ready",
+    "policy": {
+      "id": "default",
+      "version": "1",
+      "booking_date": "ignore",
+      "value_date": "ignore",
+      "transaction_currency": "ignore",
+      "account_identity": "ignore",
+      "description": "ignore",
+      "reference": "ignore",
+      "opening_balance": "ignore",
+      "closing_balance": "ignore",
+      "statement_period": "ignore",
+      "duplicate_candidates": "ignore",
+      "configured_currency": "ignore",
+      "value_date_outside_period": "ignore",
+      "other_incomplete_checks": "ignore",
+      "other_warnings": "ignore",
+      "empty_activity": "ignore",
+      "allow_destination_account": true,
+      "value_date_exempt_formats": []
+    },
+    "destination": {
+      "id": "ledger-7",
+      "currency": "EUR",
+      "source_account_id": null,
+      "source_iban": null,
+      "mapping_confirmed": true
+    },
+    "account_origin": "source",
+    "result_fingerprint": "9de0b924f458bb45435b09492651e1c9016fb7f3d6204c36565fdb08c002fa79",
+    "recorded_validation_status": "passed",
+    "validation": {
+      "status": "passed",
+      "checks": [
+        {
+          "code": "BALANCE_RECONCILIATION",
+          "status": "passed",
+          "message": "Opening balance plus transactions equals closing balance",
+          "expected": "97.50",
+          "actual": "97.50"
+        },
+        {
+          "code": "CURRENCY_CONSISTENCY",
+          "status": "passed",
+          "message": "Canonical data uses one currency: GBP",
+          "expected": null,
+          "actual": null
+        },
+        {
+          "code": "FINITE_AMOUNTS",
+          "status": "passed",
+          "message": "All canonical monetary values are finite decimals",
+          "expected": null,
+          "actual": null
+        },
+        {
+          "code": "STATEMENT_DATE_ORDER",
+          "status": "passed",
+          "message": "Statement start date does not exceed end date",
+          "expected": "start_date <= 2026-10-02",
+          "actual": "2026-10-01"
+        },
+        {
+          "code": "TRANSACTION_CURRENCIES",
+          "status": "passed",
+          "message": "Every transaction has a currency (empty activity is complete)",
+          "expected": null,
+          "actual": null
+        },
+        {
+          "code": "TRANSACTION_BOOKING_DATES",
+          "status": "passed",
+          "message": "All booking_date values lie within the inclusive statement period",
+          "expected": null,
+          "actual": null
+        },
+        {
+          "code": "TRANSACTION_VALUE_DATES",
+          "status": "passed",
+          "message": "All value_date values lie within the inclusive statement period",
+          "expected": null,
+          "actual": null
+        },
+        {
+          "code": "CURRENCY_FORMAT",
+          "status": "passed",
+          "message": "All nonblank currencies contain three ASCII letters",
+          "expected": null,
+          "actual": null
+        },
+        {
+          "code": "ACCOUNT_IDENTITY",
+          "status": "passed",
+          "message": "An account identifier is available (not independently verified)",
+          "expected": null,
+          "actual": null
+        }
+      ]
+    },
+    "reasons": [
+      {
+        "code": "DESTINATION_CURRENCY_CONFLICT",
+        "severity": "block",
+        "path": "destination.currency",
+        "transaction_indices": [],
+        "message": "Known source currency conflicts with destination currency",
+        "source_code": null
+      }
+    ],
+    "duplicate_candidates": []
+  },
+  "failed-validation": {
+    "assessment_schema_version": "1",
+    "status": "not-ready",
+    "policy": {
+      "id": "default",
+      "version": "1",
+      "booking_date": "ignore",
+      "value_date": "ignore",
+      "transaction_currency": "ignore",
+      "account_identity": "ignore",
+      "description": "ignore",
+      "reference": "ignore",
+      "opening_balance": "ignore",
+      "closing_balance": "ignore",
+      "statement_period": "ignore",
+      "duplicate_candidates": "ignore",
+      "configured_currency": "ignore",
+      "value_date_outside_period": "ignore",
+      "other_incomplete_checks": "ignore",
+      "other_warnings": "ignore",
+      "empty_activity": "ignore",
+      "allow_destination_account": true,
+      "value_date_exempt_formats": []
+    },
+    "destination": null,
+    "account_origin": "source",
+    "result_fingerprint": "3e52215b74b04040128746ba8bd802731eacbac6f6b5804d1206d0dd2ec32876",
+    "recorded_validation_status": "passed",
+    "validation": {
+      "status": "failed",
+      "checks": [
+        {
+          "code": "BALANCE_RECONCILIATION",
+          "status": "failed",
+          "message": "Opening balance plus transactions does not equal closing balance",
+          "expected": "97.50",
+          "actual": "96.50"
+        },
+        {
+          "code": "CURRENCY_CONSISTENCY",
+          "status": "passed",
+          "message": "Canonical data uses one currency: GBP",
+          "expected": null,
+          "actual": null
+        },
+        {
+          "code": "FINITE_AMOUNTS",
+          "status": "passed",
+          "message": "All canonical monetary values are finite decimals",
+          "expected": null,
+          "actual": null
+        },
+        {
+          "code": "STATEMENT_DATE_ORDER",
+          "status": "passed",
+          "message": "Statement start date does not exceed end date",
+          "expected": "start_date <= 2026-10-02",
+          "actual": "2026-10-01"
+        },
+        {
+          "code": "TRANSACTION_CURRENCIES",
+          "status": "passed",
+          "message": "Every transaction has a currency (empty activity is complete)",
+          "expected": null,
+          "actual": null
+        },
+        {
+          "code": "TRANSACTION_BOOKING_DATES",
+          "status": "passed",
+          "message": "All booking_date values lie within the inclusive statement period",
+          "expected": null,
+          "actual": null
+        },
+        {
+          "code": "TRANSACTION_VALUE_DATES",
+          "status": "passed",
+          "message": "All value_date values lie within the inclusive statement period",
+          "expected": null,
+          "actual": null
+        },
+        {
+          "code": "CURRENCY_FORMAT",
+          "status": "passed",
+          "message": "All nonblank currencies contain three ASCII letters",
+          "expected": null,
+          "actual": null
+        },
+        {
+          "code": "ACCOUNT_IDENTITY",
+          "status": "passed",
+          "message": "An account identifier is available (not independently verified)",
+          "expected": null,
+          "actual": null
+        }
+      ]
+    },
+    "reasons": [
+      {
+        "code": "FAILED_VALIDATION",
+        "severity": "block",
+        "path": "validation",
+        "transaction_indices": [],
+        "message": "Recorded or recomputed validation failed; policy cannot override",
+        "source_code": "BALANCE_RECONCILIATION"
+      }
+    ],
+    "duplicate_candidates": []
+  }
+}

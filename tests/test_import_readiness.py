@@ -985,3 +985,72 @@ def test_shipped_policy_examples_and_schema_fields_match_public_contract():
 def test_publicly_constructed_wrong_types_cannot_appear_ready(mutation):
     with pytest.raises(InputError):
         assess_import(mutation(result()), permissive())
+
+
+def test_pre_refactor_duplicate_review_token_remains_valid():
+    """Compatibility fixture captured before moving policy/fingerprint code."""
+    base = result()
+    repeated = replace(base, transactions=base.transactions * 2)
+    token = "3ef391236ce83045c660d5a17782bbadc343a7efe080297ab2c62a523c845d00"
+    assessed = assess_import(repeated, reviewed_duplicates=(token,))
+    assert assessed.result_fingerprint == (
+        "a160f4c45c8d12d1357ff20b748fade82fcd902c9cb28133bccc93dde40dc0be"
+    )
+    assert len(assessed.duplicate_candidates) == 1
+    assert assessed.duplicate_candidates[0].fingerprint == token
+    assert assessed.duplicate_candidates[0].reviewed
+    assert not any(reason.code == "DUPLICATE_CANDIDATE" for reason in assessed.reasons)
+
+
+def compatibility_assessment(case):
+    """Deterministic inputs shared with the pre-refactor fixture capture."""
+    if case in {"duplicate-review", "duplicate-reviewed"}:
+        tokens = (
+            ("d128245d1d1e78e27659cd2dcb82aa1340bf646bc30f9457991a23b3e59902eb",)
+            if case == "duplicate-reviewed"
+            else ()
+        )
+        return assess_import(duplicate_result(), reviewed_duplicates=tokens)
+    if case == "permissive-missing-fields":
+        parsed = missing(missing(result(), "description"), "statement_period")
+        return assess_import(parsed, permissive())
+    if case == "destination-mapping":
+        return assess_import(
+            missing(result(), "account_identity"),
+            destination=DestinationAccount("ledger-7", "GBP", mapping_confirmed=True),
+        )
+    if case == "destination-conflict":
+        return assess_import(
+            result(),
+            permissive(),
+            destination=DestinationAccount("ledger-7", "EUR", mapping_confirmed=True),
+        )
+    if case == "failed-validation":
+        parsed = result()
+        return assess_import(
+            replace(
+                parsed,
+                transactions=(replace(parsed.transactions[0], amount=Decimal("-3.50")),),
+            ),
+            permissive(),
+        )
+    raise AssertionError(f"Unknown compatibility case: {case}")
+
+
+@pytest.mark.parametrize(
+    "case",
+    [
+        "duplicate-review",
+        "duplicate-reviewed",
+        "permissive-missing-fields",
+        "destination-mapping",
+        "destination-conflict",
+        "failed-validation",
+    ],
+)
+def test_serialized_assessment_matches_pre_refactor_snapshot(case):
+    fixture = Path(__file__).parent / "fixtures/readiness/pre_refactor_assessments.json"
+    expected = json.loads(fixture.read_text(encoding="utf-8"))[case]
+    # Compare the entire public serialized assessment, including reason order,
+    # validation checks, destination context, fingerprints and reviewed flags.
+    assert to_primitive(compatibility_assessment(case)) == expected
