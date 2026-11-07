@@ -10,7 +10,11 @@ from typing import Any
 from bankparser.errors import ParseError, ParserDependencyError, dependency_install_hint
 from bankparser.models import Account, Counterparty, Statement, Transaction, Warning
 from bankparser.parsers.base import CanonicalData, ParseContext
-from bankparser.parsers.mt940.source import source_fields
+from bankparser.parsers.mt940.source import (
+    source_fields,
+    verify_statement,
+    verify_transaction,
+)
 from bankparser.parsers.scalars import currency_text
 
 
@@ -35,7 +39,7 @@ class WolphMt940Adapter:
 
     def parse(self, data: bytes, context: ParseContext) -> CanonicalData:
         del context
-        _, source_transactions = source_fields(data)
+        fields, source_transactions = source_fields(data)
         options = self._mt940.Options(
             applicant_iban=True,
             merge_keeps_values=True,
@@ -76,6 +80,8 @@ class WolphMt940Adapter:
                 "MT940 source and parser transaction counts differ",
                 code="TRANSACTION_COUNT_MISMATCH",
             )
+        for source, transaction in zip(source_transactions, transactions):
+            verify_transaction(source, transaction, backend="wolph")
         transaction_currencies = {tx.currency for tx in transactions if tx.currency}
         warnings: list[Warning] = []
 
@@ -119,6 +125,7 @@ class WolphMt940Adapter:
             ),
         )
         account = Account(id=account_id, iban=None, currency=currency)
+        verify_statement(fields, account, statement)
         return CanonicalData(
             account=account,
             statement=statement,
@@ -132,9 +139,13 @@ class WolphMt940Adapter:
         data = native.data
         native_amount = data.get("amount")
         amount = _amount(native_amount)
-        currency = currency_text(
-            getattr(native_amount, "currency", None), location="MT940/transaction/currency"
-        ) or statement_currency
+        currency = (
+            currency_text(
+                getattr(native_amount, "currency", None),
+                location="MT940/transaction/currency",
+            )
+            or statement_currency
+        )
 
         value_date = _date(data.get("date"))
         # MT940 entry_date is optional. Do not fabricate a booking date by
@@ -192,7 +203,9 @@ def _balance(value: Any) -> Decimal | None:
 
 def _balance_currency(value: Any) -> str | None:
     amount = getattr(value, "amount", None)
-    return currency_text(getattr(amount, "currency", None), location="MT940/balance/currency")
+    return currency_text(
+        getattr(amount, "currency", None), location="MT940/balance/currency"
+    )
 
 
 def _balance_date(value: Any) -> date | None:
