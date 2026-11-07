@@ -107,7 +107,9 @@ and retains their original cells. It is not a streaming-result API.
 
 `BALANCE_RECONCILIATION` checks opening balance plus signed movements against
 closing balance using exact arithmetic. `CURRENCY_CONSISTENCY` checks available
-account, transaction and balance currencies. `FINITE_AMOUNTS` rejects non-finite
+account, transaction and balance currencies. `CURRENCY_FORMAT` requires every
+nonblank currency to contain exactly three ASCII letters; missing values retain
+their existing completeness policy. `FINITE_AMOUNTS` rejects non-finite
 canonical amounts and balances. Parsing isolates backend arithmetic from the
 caller's Decimal context; validation chooses enough precision for its operands
 and leaves caller settings unchanged.

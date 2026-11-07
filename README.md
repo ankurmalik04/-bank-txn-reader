@@ -225,7 +225,7 @@ else:
 ```
 
 Validation runs `BALANCE_RECONCILIATION`, `CURRENCY_CONSISTENCY`,
-`FINITE_AMOUNTS`, `STATEMENT_DATE_ORDER` and `ACCOUNT_IDENTITY`. Version
+`CURRENCY_FORMAT`, `FINITE_AMOUNTS`, `STATEMENT_DATE_ORDER` and `ACCOUNT_IDENTITY`. Version
 0.5.0a2 also checks `TRANSACTION_CURRENCIES`, `TRANSACTION_BOOKING_DATES` and
 `TRANSACTION_VALUE_DATES`: missing currencies/dates/bounds are incomplete,
 outside booking dates fail, and outside value dates require settlement review.

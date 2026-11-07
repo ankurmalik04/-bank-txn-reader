@@ -13,6 +13,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from xml.etree import ElementTree as ET
 
+from bankparser.currencies import is_currency_code
 from bankparser.errors import ParseError
 from bankparser.models import Account, Statement, Transaction, Warning
 from bankparser.parsers.base import CanonicalData
@@ -332,11 +333,11 @@ def read_source(data: bytes) -> OfxSource:
     account_id = _value(account, "ACCTID")
     currency = _value(scope, "CURDEF")
     if currency is not None:
-        currency = currency.upper()
-        if re.fullmatch(r"[A-Z]{3}", currency) is None:
+        if not is_currency_code(currency):
             raise ParseError(
                 "Invalid OFX currency", code="INVALID_CURRENCY", location="CURDEF"
             )
+        currency = currency.upper()
     activity = _one(scope, "BANKTRANLIST", required=True)
     assert activity is not None
     nodes = activity.findall("STMTTRN")

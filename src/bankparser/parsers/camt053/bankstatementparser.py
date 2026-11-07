@@ -8,6 +8,7 @@ from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
+from bankparser.currencies import is_currency_code
 from bankparser.errors import ParseError, ParserDependencyError, dependency_install_hint
 from bankparser.models import Account, Counterparty, Statement, Transaction, Warning
 from bankparser.parsers.base import CanonicalData, ParseContext
@@ -88,7 +89,13 @@ class BankStatementParserCamt053Adapter:
         if not isinstance(summary, Mapping):
             raise ParseError("bankstatementparser returned an invalid CAMT summary")
 
-        currency = _currency(summary.get("currency"))
+        # An empty statement's backend summary fabricates "Unknown" when the
+        # source has no currency. Keep that absence distinct from malformed text.
+        currency = (
+            _currency(summary.get("currency"))
+            if transaction_records or balance_records
+            else _currency(_element_text(statement_node, "./Acct/Ccy"))
+        )
         transactions = tuple(
             _map_transaction(
                 record, statement_currency=currency, source=source_transactions[index]
@@ -711,6 +718,12 @@ def _meaningful_reference(value: Any) -> str | None:
 
 def _currency(value: Any) -> str | None:
     text = _text(value)
+    if text is not None and not is_currency_code(text):
+        raise ParseError(
+            "CAMT currency must contain three ASCII letters",
+            code="INVALID_CURRENCY",
+            location="Stmt currency",
+        )
     return text.upper() if text is not None else None
 
 

@@ -182,6 +182,12 @@ def core(
                 )
             ],
             {
+                "code": "CURRENCY_FORMAT",
+                "status": "passed",
+                "expected": None,
+                "actual": None,
+            },
+            {
                 "code": "ACCOUNT_IDENTITY",
                 "status": identity_status,
                 "expected": None,

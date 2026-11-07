@@ -6,6 +6,7 @@ import re
 from datetime import date, datetime, timezone
 from decimal import Decimal
 
+from bankparser.currencies import is_currency_code
 from bankparser.detection.csv import normalize_csv_header
 from bankparser.errors import ParseError
 from bankparser.models import Account, Statement, Transaction, Warning
@@ -31,7 +32,7 @@ class NativeCsvAdapter:
         layout = read_layout(data, options)
         columns = layout.columns
         rows = source_rows(layout)
-        transactions = []
+        transactions: list[Transaction] = []
         warnings = {
             warning.code: warning
             for warning in (
@@ -53,7 +54,17 @@ class NativeCsvAdapter:
             def cell(name: str, row: dict[str, str] = row) -> str:
                 return row.get(columns.get(name, ""), "").strip()
 
-            source_currency = cell("currency").upper() or None
+            source_currency = cell("currency") or None
+            if source_currency is not None and not is_currency_code(source_currency):
+                raise ParseError(
+                    "Source currency must contain three ASCII letters",
+                    code="INVALID_CURRENCY",
+                    location=f"CSV line {start_line}, currency",
+                    record_index=len(transactions),
+                    canonical_field="transactions.currency",
+                    guidance="Correct the source currency or the CSV column mapping.",
+                )
+            source_currency = source_currency.upper() if source_currency else None
             currency = source_currency or options.default_currency
             if (
                 options.expected_currency is not None
